@@ -74,9 +74,10 @@ def update_v_cruise(v_cruise_kph, buttonEvents, enabled):
 
 
 def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last):
-  for b in buttonEvents:
-    # 250kph or above probably means we never had a set speed
-    if b.type == "accelCruise" and v_cruise_last < 250:
-      return v_cruise_last
+  # BMW has dedicated button to resume to previous cruise speed
+  # for b in buttonEvents:
+  #   # 250kph or above probably means we never had a set speed
+  #   if b.type == "accelCruise" and v_cruise_last < 250:
+  #     return v_cruise_last
 
   return int(round(clip(v_ego * CV.MS_TO_KPH, V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)))
