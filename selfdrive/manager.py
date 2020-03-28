@@ -11,6 +11,7 @@ import datetime
 
 from common.basedir import BASEDIR, PARAMS
 from common.android import ANDROID
+WEBCAM = os.getenv("WEBCAM") is not None
 sys.path.append(os.path.join(BASEDIR, "pyextra"))
 os.environ['BASEDIR'] = BASEDIR
 
@@ -190,6 +191,7 @@ persistent_processes = [
   'ui',
   'uploader',
 ]
+
 if ANDROID:
   persistent_processes += [
     'logcatd',
@@ -211,6 +213,12 @@ car_started_processes = [
   'ubloxd',
   'locationd',
 ]
+
+if WEBCAM:
+  car_started_processes += [
+    'dmonitoringmodeld',
+  ]
+
 if ANDROID:
   car_started_processes += [
     'sensord',
@@ -353,7 +361,7 @@ def manager_init(should_register=True):
   if should_register:
     reg_res = register()
     if reg_res:
-      dongle_id, dongle_secret = reg_res
+      dongle_id = reg_res
     else:
       raise Exception("server registration failed")
   else:
@@ -518,7 +526,7 @@ def main():
     ("LongitudinalControl", "0"),
     ("LimitSetSpeed", "0"),
     ("LimitSetSpeedNeural", "0"),
-    ("LastUpdateTime", datetime.datetime.now().isoformat().encode('utf8')),
+    ("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')),
     ("OpenpilotEnabledToggle", "1"),
     ("LaneChangeEnabled", "1"),
   ]

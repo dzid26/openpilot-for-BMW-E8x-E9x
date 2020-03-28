@@ -8,7 +8,7 @@ static void ui_draw_sidebar_background(UIState *s, bool hasSidebar) {
 
   nvgBeginPath(s->vg);
   nvgRect(s->vg, sbr_x, 0, sbr_w, vwp_h);
-  nvgFillColor(s->vg, COLOR_BLACK_ALPHA);
+  nvgFillColor(s->vg, COLOR_BLACK_ALPHA(85));
   nvgFill(s->vg);
 }
 
@@ -89,7 +89,7 @@ static void ui_draw_sidebar_network_type(UIState *s, bool hasSidebar) {
 
   nvgFillColor(s->vg, COLOR_WHITE);
   nvgFontSize(s->vg, 48);
-  nvgFontFace(s->vg, "sans-regular");
+  nvgFontFaceId(s->vg, s->font_sans_regular);
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
   nvgTextBox(s->vg, network_x, network_y, network_w, network_type_str, NULL);
 }
@@ -98,7 +98,8 @@ static void ui_draw_sidebar_metric(UIState *s, const char* label_str, const char
   const int metric_x = hasSidebar ? 30 : -(sbr_w);
   const int metric_y = 338 + y_offset;
   const int metric_w = 240;
-  const int metric_h = message_str ? strlen(message_str) > 8 ? 124 : 100 : 148;
+  const int metric_h = message_str ? strchr(message_str, '\n') ? 124 : 100 : 148;
+
   NVGcolor status_color;
 
   if (severity == 0) {
@@ -111,7 +112,7 @@ static void ui_draw_sidebar_metric(UIState *s, const char* label_str, const char
 
   nvgBeginPath(s->vg);
   nvgRoundedRect(s->vg, metric_x, metric_y, metric_w, metric_h, 20);
-  nvgStrokeColor(s->vg, severity > 0 ? COLOR_WHITE : COLOR_WHITE_ALPHA);
+  nvgStrokeColor(s->vg, severity > 0 ? COLOR_WHITE : COLOR_WHITE_ALPHA(85));
   nvgStrokeWidth(s->vg, 2);
   nvgStroke(s->vg);
 
@@ -123,46 +124,22 @@ static void ui_draw_sidebar_metric(UIState *s, const char* label_str, const char
   if (!message_str) {
     nvgFillColor(s->vg, COLOR_WHITE);
     nvgFontSize(s->vg, 78);
-    nvgFontFace(s->vg, "sans-bold");
+    nvgFontFaceId(s->vg, s->font_sans_bold);
     nvgTextAlign(s->vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
     nvgTextBox(s->vg, metric_x + 50, metric_y + 50, metric_w - 60, value_str, NULL);
 
     nvgFillColor(s->vg, COLOR_WHITE);
     nvgFontSize(s->vg, 48);
-    nvgFontFace(s->vg, "sans-regular");
+    nvgFontFaceId(s->vg, s->font_sans_regular);
     nvgTextAlign(s->vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
     nvgTextBox(s->vg, metric_x + 50, metric_y + 50 + 66, metric_w - 60, label_str, NULL);
   } else {
     nvgFillColor(s->vg, COLOR_WHITE);
     nvgFontSize(s->vg, 48);
-    nvgFontFace(s->vg, "sans-bold");
+    nvgFontFaceId(s->vg, s->font_sans_bold);
     nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-    nvgTextBox(s->vg, metric_x + 35, metric_y + (strlen(message_str) > 8 ? 40 : 50), metric_w - 50, message_str, NULL);
+    nvgTextBox(s->vg, metric_x + 35, metric_y + (strchr(message_str, '\n') ? 40 : 50), metric_w - 50, message_str, NULL);
   }
-}
-
-static void ui_draw_sidebar_storage_metric(UIState *s, bool hasSidebar) {
-  int storage_severity;
-  char storage_label_str[32];
-  char storage_value_str[32];
-  char storage_value_unit[32];
-  const int storage_y_offset = 0;
-  const float storage_pct = ceilf((1.0 - s->scene.freeSpace) * 100);
-
-  if (storage_pct < 75.0) {
-    storage_severity = 0;
-  } else if (storage_pct >= 75.0 && storage_pct < 87.0) {
-    storage_severity = 1;
-  } else if (storage_pct >= 87.0) {
-    storage_severity = 2;
-  }
-
-  snprintf(storage_value_str, sizeof(storage_value_str), "%d", (int)storage_pct);
-  snprintf(storage_value_unit, sizeof(storage_value_unit), "%s", "%");
-  snprintf(storage_label_str, sizeof(storage_label_str), "%s", "STORAGE");
-  strcat(storage_value_str, storage_value_unit);
-
-  ui_draw_sidebar_metric(s, storage_label_str, storage_value_str, storage_severity, storage_y_offset, NULL, hasSidebar);
 }
 
 static void ui_draw_sidebar_temp_metric(UIState *s, bool hasSidebar) {
@@ -170,7 +147,7 @@ static void ui_draw_sidebar_temp_metric(UIState *s, bool hasSidebar) {
   char temp_label_str[32];
   char temp_value_str[32];
   char temp_value_unit[32];
-  const int temp_y_offset = 148 + 32;
+  const int temp_y_offset = 0;
 
   if (s->scene.thermalStatus == cereal_ThermalData_ThermalStatus_green) {
     temp_severity = 0;
@@ -193,27 +170,27 @@ static void ui_draw_sidebar_temp_metric(UIState *s, bool hasSidebar) {
 static void ui_draw_sidebar_panda_metric(UIState *s, bool hasSidebar) {
   int panda_severity;
   char panda_message_str[32];
-  const int panda_y_offset = (148 + 32) * 2;
+  const int panda_y_offset = 32 + 148;
 
   if (s->scene.hwType == cereal_HealthData_HwType_unknown) {
     panda_severity = 2;
-    snprintf(panda_message_str, sizeof(panda_message_str), "%s", "NO PANDA");
+    snprintf(panda_message_str, sizeof(panda_message_str), "%s", "NO\nPANDA");
   } else if (s->scene.hwType == cereal_HealthData_HwType_whitePanda) {
     panda_severity = 0;
-    snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA ACTIVE");
+    snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA\nACTIVE");
   } else if (
       (s->scene.hwType == cereal_HealthData_HwType_greyPanda) ||
       (s->scene.hwType == cereal_HealthData_HwType_blackPanda) ||
       (s->scene.hwType == cereal_HealthData_HwType_uno)) {
       if (s->scene.satelliteCount == -1) {
         panda_severity = 0;
-        snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA ACTIVE");
+        snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA\nACTIVE");
       } else if (s->scene.satelliteCount < 6) {
         panda_severity = 1;
         snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA\nNO GPS");
       } else if (s->scene.satelliteCount >= 6) {
         panda_severity = 0;
-        snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA GOOD GPS");
+        snprintf(panda_message_str, sizeof(panda_message_str), "%s", "PANDA\nGOOD GPS");
       }
   }
 
@@ -228,7 +205,6 @@ void ui_draw_sidebar(UIState *s) {
   ui_draw_sidebar_network_strength(s, hasSidebar);
   ui_draw_sidebar_battery_icon(s, hasSidebar);
   ui_draw_sidebar_network_type(s, hasSidebar);
-  ui_draw_sidebar_storage_metric(s, hasSidebar);
   ui_draw_sidebar_temp_metric(s, hasSidebar);
   ui_draw_sidebar_panda_metric(s, hasSidebar);
 }
