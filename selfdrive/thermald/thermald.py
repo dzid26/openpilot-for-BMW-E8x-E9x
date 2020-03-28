@@ -76,7 +76,7 @@ def setup_eon_fan():
     bus.write_byte_data(0x21, 0x02, 0x2)   # needed?
     bus.write_byte_data(0x21, 0x04, 0x4)   # manual override source
   except IOError:
-    print("LEON detected")
+    print("LEON possibly")
     LEON = True
   bus.close()
 
@@ -91,14 +91,16 @@ def set_eon_fan(val):
         i = [0x1, 0x3 | 0, 0x3 | 0x08, 0x3 | 0x10][val]
         bus.write_i2c_block_data(0x3d, 0, [i])
       except IOError:
-        # tusb320
-        if val == 0:
-          bus.write_i2c_block_data(0x67, 0xa, [0])
-          #bus.write_i2c_block_data(0x67, 0x45, [1<<2])
-        else:
-          #bus.write_i2c_block_data(0x67, 0x45, [0])
-          bus.write_i2c_block_data(0x67, 0xa, [0x20])
-          bus.write_i2c_block_data(0x67, 0x8, [(val-1)<<6])
+        try: # tusb320
+          if val == 0:
+            bus.write_i2c_block_data(0x67, 0xa, [0])
+            #bus.write_i2c_block_data(0x67, 0x45, [1<<2])
+          else:
+            #bus.write_i2c_block_data(0x67, 0x45, [0])
+            bus.write_i2c_block_data(0x67, 0xa, [0x20])
+            bus.write_i2c_block_data(0x67, 0x8, [(val-1)<<6])
+        except IOError:
+          print("LEON failed. It must be frEON")
     else:
       bus.write_byte_data(0x21, 0x04, 0x2)
       bus.write_byte_data(0x21, 0x03, (val*2)+1)

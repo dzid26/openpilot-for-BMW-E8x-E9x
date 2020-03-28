@@ -15,7 +15,7 @@ ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons withi
 ACCEL_MAX = 4  # cruise control rapid clicking
 ACCEL_SLOW = 3 # cruise control hold up
 DECEL_SLOW = -2   # cruise control decrease speed slowly
-DECEL_MIN = -6.0  # cruise control hold down
+DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 
@@ -60,7 +60,6 @@ def process_hud_alert(hud_alert):
 
   return steer, fcw
 
-
 # def ipas_state_transition(steer_angle_enabled, enabled, ipas_active, ipas_reset_counter):
 #
 #   if enabled and not steer_angle_enabled:
@@ -85,15 +84,14 @@ def process_hud_alert(hud_alert):
 #     return False, 0
 
 
-class CarController():
-  def __init__(self, dbc_name, car_fingerprint, enable_camera, enable_dsu, enable_apg):
+class CarController:
+  def __init__(self, dbc_name, CP, VM):
     self.braking = False
     # redundant safety check with the board
     self.controls_allowed = True
     self.last_steer = 0
     self.last_angle = 0
     self.accel_steady = 0.
-    self.car_fingerprint = car_fingerprint
     self.alert_active = False
     self.last_standstill = False
     self.standstill_req = False
@@ -115,17 +113,16 @@ class CarController():
   def update(self, control, CS, frame):
     requestedSpeed = control.cruiseControl.speedOverride * CV.MS_TO_MPH
     current_time_ms = _current_time_millis()
-    print(control.enabled, "SpeedErr: ", requestedSpeed,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.angle_steers)
+    print(control.enabled, "SpeedErr: ", requestedSpeed,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.out.steeringAngle)
     can_sends = []
     # test
     # can_sends.append(create_steer_command(self.packer, -5, -7777, 2))
-
 
     # *** compute control surfaces ***
     CC_cancel_cmd = 0
     # gas and brake
 
-    # if not control.enabled and CS.pcm_acc_active!= 0:
+    # if not control.enabled and CS.out.pcm_acc_active!= 0:
     #   # send cruise control cancel command if openpilot  is disabled but cruise control is still on, or if the system can't be activated
     #   CC_cancel_cmd = 1
     # else:
@@ -138,14 +135,14 @@ class CarController():
       can_sends.append(create_accel_command(self.packer, "cancel"))
       self.last_time_button_pressed = current_time_ms
       print("cancel")
-    elif ( ( requestedSpeed - CS.v_cruise_pcm)> 0.5) and control.enabled  and buttons_pause_time:# err=desired-requested=70-67=3
+    elif ( ( requestedSpeed - CS.out.cruiseState.speed)> 0.5) and control.enabled  and buttons_pause_time:# err=desired-requested=70-67=3
       can_sends.append(create_accel_command(self.packer, "plus1"))
       self.last_time_button_pressed = current_time_ms
-      print("+plus1      ", requestedSpeed, "    -    ",    CS.v_cruise_pcm)
-    elif (( CS.v_cruise_pcm - requestedSpeed )> 0.6) and control.enabled and buttons_pause_time:# err=desired-requested=60-67=-7
+      print("+plus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
+    elif (( CS.out.cruiseState.speed - requestedSpeed )> 0.6) and control.enabled and buttons_pause_time:# err=desired-requested=60-67=-7
       can_sends.append(create_accel_command(self.packer, "minus1"))
       self.last_time_button_pressed = current_time_ms
-      print("-minus1      ", requestedSpeed, "    -    ",    CS.v_cruise_pcm)
+      print("-minus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
 
     # if CC_cancel_cmd and buttons_pause_time:
     #   can_sends.append(create_accel_command(self.packer, "cancel"))
@@ -154,11 +151,11 @@ class CarController():
     # elif control.actuators.gas >0.5 and control.enabled and buttons_pause_time:  # err=desired-requested=70-67=3
     #   can_sends.append(create_accel_command(self.packer, "plus1"))
     #   self.last_time_button_pressed = current_time_ms
-    #   print("+plus1      ", requestedSpeed, "    -    ", CS.v_cruise_pcm)
+    #   print("+plus1      ", requestedSpeed, "    -    ", CS.out.cruiseState.speed)
     # elif control.actuators.brake >0.5 and control.enabled and buttons_pause_time:  # err=desired-requested=60-67=-7
     #   can_sends.append(create_accel_command(self.packer, "minus1"))
     #   self.last_time_button_pressed = current_time_ms
-    #   print("-minus1      ", requestedSpeed, "    -    ", CS.v_cruise_pcm)
+    #   print("-minus1      ", requestedSpeed, "    -    ", CS.out.cruiseState.speed)
 
       # apply_accel =actuators.gas - actuators.brake
     # apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
@@ -166,11 +163,11 @@ class CarController():
 
     # steer torque
     new_steer = int(round(control.actuators.steer * SteerLimitParams.STEER_MAX))
-    apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.steer_torque_motor, SteerLimitParams)
+    apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, SteerLimitParams)
     self.steer_rate_limited = new_steer != apply_steer
 
     # only cut torque when steer state is a known fault
-    # if CS.steer_state in [9, 25]:
+    # if CS.out.steer_state in [9, 25]:
     #   self.last_fault_frame = frame
 
     # Cut steering for 2s after fault
@@ -181,42 +178,36 @@ class CarController():
       apply_steer_req = 1
 
     # self.steer_angle_enabled, self.ipas_reset_counter = \
-    #   ipas_state_transition(self.steer_angle_enabled, enabled, CS.ipas_active, self.ipas_reset_counter)
-    #print("{0} {1} {2}".format(self.steer_angle_enabled, self.ipas_reset_counter, CS.ipas_active))
+    #   ipas_state_transition(self.steer_angle_enabled, enabled, CS.out.ipas_active, self.ipas_reset_counter)
+    #print("{0} {1} {2}".format(self.steer_angle_enabled, self.ipas_reset_counter, CS.out.ipas_active))
 
     # steer angle
     if control.enabled:
       apply_angle = control.actuators.steerAngle
-      angle_lim = interp(CS.v_ego, ANGLE_MAX_BP, ANGLE_MAX_V)
+      angle_lim = interp(CS.out.v_ego, ANGLE_MAX_BP, ANGLE_MAX_V)
       apply_angle = clip(apply_angle, -angle_lim, angle_lim)
 
       # windup slower
       if self.last_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_angle):
-        angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_V)
+        angle_rate_lim = interp(CS.out.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_V)
       else:
-        angle_rate_lim = interp(CS.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
+        angle_rate_lim = interp(CS.out.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
 
       apply_angle = clip(apply_angle, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim)
 
-      can_sends.append(create_steer_command(self.packer, (CS.angle_steers - apply_angle) / 1.8 * 256 * 19 * 25/12 ))
+      can_sends.append(create_steer_command(self.packer, (CS.out.steeringAngle - apply_angle) / 1.8 * 256 * 19 * 25/12 ))
     else:
-      apply_angle = CS.angle_steers
+      apply_angle = CS.out.steeringAngle
 
-    ## on entering standstill, send standstill request
-    #if CS.standstill and not self.last_standstill:
-    #  self.standstill_req = True
-    #if CS.pcm_acc_active != 8:
-    #  # pcm entered standstill or it's disabled
-    #  self.standstill_req = False
 
     self.last_steer = apply_steer
     self.last_angle = apply_angle
     # self.last_accel = apply_accel
-    self.last_standstill = CS.standstill
+    self.last_standstill = CS.out.standstill
 
 
     #*** control msgs ***
-    #print("steer {0} {1} {2} {3}".format(apply_steer, min_lim, max_lim, CS.steer_torque_motor)
+    #print("steer {0} {1} {2} {3}".format(apply_steer, min_lim, max_lim, CS.out.steeringTorqueEps)
 
       #if self.angle_control:
       #  can_sends.append(create_steer_command(self.packer, 0., 0, frame))
