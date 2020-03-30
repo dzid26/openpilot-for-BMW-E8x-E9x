@@ -437,7 +437,7 @@ struct CarParams {
     chrysler @9;
     tesla @10;
     subaru @11;
-    gmPassive @12;
+    bmw @12;
     mazda @13;
     nissan @14;
     volkswagen @15;
