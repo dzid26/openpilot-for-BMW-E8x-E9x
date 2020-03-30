@@ -348,6 +348,13 @@ void ignition_can_hook(CAN_FIFOMailBox_TypeDef *to_push) {
       ignition_can = GET_BYTES_04(to_push) != 0;
     }
   }
+  if (bus == 1) {
+    // BMW case
+    if ((addr == 0x130) && (len == 5)) {
+      // bits 22 and 23 are zero when ignition is on 
+      ignition_can = (GET_BYTE(to_push, 3) & 0xC0) == 0;
+    } 
+  }
 }
 
 // CAN receive handlers
