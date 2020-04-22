@@ -5,16 +5,18 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.bmw.values import CAR, DBC, STEER_THRESHOLD, NO_DSU_CAR
+from common.params import Params
 
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
-    can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
-    self.shifter_values = can_define.dv["GearSelectorSwitch"]['Gear']
+    # can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
+    # self.shifter_values = can_define.dv["GearSelectorSwitch"]['Gear']
     self.angle_offset = 0.
     self.steer_warning = False
     self.low_speed_lockout = False
 
+    self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"
     self.cruise_plus = False
     self.cruise_minus = False
     self.cruise_plus5 = False
@@ -33,6 +35,15 @@ class CarState(CarStateBase):
     self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
 
   def update(self, cp_PT, cp_F):
+    self.prev_cruise_plus = self.cruise_plus
+    self.prev_cruise_minus = self.cruise_minus
+    self.prev_cruise_plus5 = self.cruise_plus5
+    self.prev_cruise_minus5 = self.cruise_minus5
+    self.prev_cruise_resume = self.cruise_resume
+    self.prev_cruise_cancel = self.cruise_cancel
+    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
+    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
+
     ret = car.CarState.new_message()
 
     ret.doorOpen = False # not any([cp.vl["SEATS_DOORS"]['DOOR_OPEN_FL'], cp.vl["SEATS_DOORS"]['DOOR_OPEN_FR']
@@ -40,7 +51,7 @@ class CarState(CarStateBase):
 
     ret.brakePressed = cp_PT.vl["EngineAndBrake"]['BrakePressed'] != 0
     ret.gas = cp_PT.vl['AccPedal']["AcceleratorPedalPercentage"]
-    ret.gasPressed = ret.gas > 20
+    ret.gasPressed = False # ret.gas > 20
 
     ret.espDisabled = False  # cp.vl["ESP_CONTROL"]['TC_DISABLED'] ==1
 
@@ -49,7 +60,7 @@ class CarState(CarStateBase):
     ret.wheelSpeeds.fr = ret.vEgoRaw  # cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_FR'] * CV.KPH_TO_MS #* speed_factor
     ret.wheelSpeeds.fl = ret.vEgoRaw  # cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RL'] * CV.KPH_TO_MS #* speed_factor
     ret.wheelSpeeds.fr = ret.vEgoRaw  # cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RR'] * CV.KPH_TO_MS #* speed_factor
-    ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr])
+    # ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr])
 
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
 
@@ -58,8 +69,8 @@ class CarState(CarStateBase):
     ret.steeringAngle = (cp_F.vl['SteeringWheelAngle_DSC'][
       'SteeringPosition'])  # slightly quicker on F-CAN  TODO find the factor and put in DBC
     ret.steeringRate = (cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed'])
-    can_gear = 0  # int(cp.vl["GEAR_PACKET"]['GEAR'])
-    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
+    can_gear = int(cp_PT.vl["GearSelectorSwitch"]['Gear'])
+    ret.gearShifter = self.parse_gear_shifter('D')  #self.shifter_values.get(can_gear, None))
     ret.leftBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0 and cp_PT.vl["TurnSignals"]['LeftTurn'] !=0   # blinking
     ret.rightBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0  and cp_PT.vl["TurnSignals"]['RightTurn'] !=0   # blinking
     right_blinker_pressed = cp_PT.vl["TurnSignals"]['RightTurn'] != 0
@@ -73,11 +84,11 @@ class CarState(CarStateBase):
     # do lane change after releasing blinker stalk
     ret.steeringPressed = blinker_on and not right_blinker_pressed and not left_blinker_pressed
 
-    self.cruise_plus = cp_F.vl["CruiseControl"]['plus1mph_request'] == 1
-    self.cruise_minus = cp_F.vl["CruiseControl"]['minus1mph_request'] == 1
-    self.cruise_plus5 = cp_F.vl["CruiseControl"]['plus5mph_request'] == 1
-    self.cruise_minus5 = cp_F.vl["CruiseControl"]['minus5mph_request'] == 1
-    self.cruise_resume = cp_F.vl["CruiseControl"]['Resume_request'] == 1
+    self.cruise_plus = cp_F.vl["CruiseControl"]['plus1mph_request'] != 0
+    self.cruise_minus = cp_F.vl["CruiseControl"]['minus1mph_request'] != 0
+    self.cruise_plus5 = cp_F.vl["CruiseControl"]['plus5mph_request'] != 0
+    self.cruise_minus5 = cp_F.vl["CruiseControl"]['minus5mph_request'] != 0
+    self.cruise_resume = cp_F.vl["CruiseControl"]['Resume_request'] != 0
     self.cruise_cancel = cp_F.vl["CruiseControl"]['Cancel_request_up_or_down_stalk'] != 0
     self.cruise_cancelUpStalk = cp_F.vl["CruiseControl"]['Cancel_request_up_stalk'] != 0
     self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
@@ -89,16 +100,21 @@ class CarState(CarStateBase):
     elif self.CP.carFingerprint in [CAR.E82, CAR.E90]:
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed']
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
+
+    if ret.cruiseState.enabled:
+      if abs(ret.cruiseState.speed / ret.vEgoRaw - CV.MS_TO_KPH) < 0.3:
+        self.is_metric = True
+      elif abs(ret.cruiseState.speed / ret.vEgoRaw- CV.MS_TO_MPH) < 0.3:
+        self.is_metric = False
+
+    self.is_metric = True
+    if self.is_metric: #recalculate to the right unit
+      ret.cruiseState.speed = ret.cruiseState.speed * CV.KPH_TO_MS
+    else:
+      ret.cruiseState.speed = ret.cruiseState.speed * CV.MPH_TO_MS
+
     ret.steeringTorqueEps = 0
 
-    self.prev_cruise_plus = self.cruise_plus
-    self.prev_cruise_minus = self.cruise_minus
-    self.prev_cruise_plus5 = self.cruise_plus5
-    self.prev_cruise_minus5 = self.cruise_minus5
-    self.prev_cruise_resume = self.cruise_resume
-    self.prev_cruise_cancel = self.cruise_cancel
-    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
-    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
     return ret
 
   @staticmethod
@@ -106,7 +122,7 @@ class CarState(CarStateBase):
     signals = [  # signal name, message name, default value
       # sig_name, sig_address, default
       ("BrakePressed", "EngineAndBrake", 0),
-      # ("GEAR", "GEAR_PACKET", 0),
+      ("Gear", "GearSelectorSwitch", 0),
       ("AcceleratorPedalPressed", "AccPedal", 0),
       ("AcceleratorPedalPercentage", "AccPedal", 0),
       ("VehicleSpeed", "Speed", 0),
@@ -159,7 +175,7 @@ class CarState(CarStateBase):
     return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)  # 1: F-CAN, 2: PT-CAN
 
   @staticmethod
-  def get_cam_can_parser( # F-CAN
+  def get_cam_can_parser( # comF-CAN
     CP):  # 540 vehicle option could get away with just PT_CAN, but vo544 requires sending, and thus receiving, cruise commands on F-CAN. F-can works for both options.
     signals = [  # signal name, message name, default value
       # sig_name, sig_address, default
@@ -180,4 +196,4 @@ class CarState(CarStateBase):
     checks = [  # refresh frequency Hz  TODO measure with PCAN
       ("SteeringWheelAngle_DSC", 80),
     ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 1)  #
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 1)  # 1: F-CAN, 2: PT-CAN

@@ -662,7 +662,7 @@ ALERTS = [
   Alert(
       "commIssueNoEntry",
       "openpilot Unavailable",
-      "Communication Issue between Processes",
+      "Communication Issue between Processes or CAN not present",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
 

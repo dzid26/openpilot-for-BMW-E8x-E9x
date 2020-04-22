@@ -111,9 +111,9 @@ class CarController:
     self.packer = CANPacker(dbc_name)
 
   def update(self, control, CS, frame):
-    requestedSpeed = control.cruiseControl.speedOverride * CV.MS_TO_MPH
+    requestedSpeed = control.cruiseControl.speedOverride
     current_time_ms = _current_time_millis()
-    print(control.enabled, "SpeedErr: ", requestedSpeed,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.out.steeringAngle)
+    print(control.enabled, "SpeedErr: ", requestedSpeed * CV.MS_TO_MPH,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.out.steeringAngle)
     can_sends = []
     # test
     # can_sends.append(create_steer_command(self.packer, -5, -7777, 2))
@@ -135,27 +135,15 @@ class CarController:
       can_sends.append(create_accel_command(self.packer, "cancel"))
       self.last_time_button_pressed = current_time_ms
       print("cancel")
-    elif ( ( requestedSpeed - CS.out.cruiseState.speed)> 0.5) and control.enabled  and buttons_pause_time:# err=desired-requested=70-67=3
+    elif ( ( requestedSpeed - CS.out.cruiseState.speed)> 0.5 *CV.MPH_TO_MS) and control.enabled  and buttons_pause_time:# err=desired-requested=70-67=3
       can_sends.append(create_accel_command(self.packer, "plus1"))
       self.last_time_button_pressed = current_time_ms
       print("+plus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
-    elif (( CS.out.cruiseState.speed - requestedSpeed )> 0.6) and control.enabled and buttons_pause_time:# err=desired-requested=60-67=-7
+    elif (( CS.out.cruiseState.speed - requestedSpeed )> 0.6 *CV.MPH_TO_MS) and control.enabled and buttons_pause_time:# err=desired-requested=60-67=-7
       can_sends.append(create_accel_command(self.packer, "minus1"))
       self.last_time_button_pressed = current_time_ms
       print("-minus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
 
-    # if CC_cancel_cmd and buttons_pause_time:
-    #   can_sends.append(create_accel_command(self.packer, "cancel"))
-    #   self.last_time_button_pressed = current_time_ms
-    #   print("cancel")
-    # elif control.actuators.gas >0.5 and control.enabled and buttons_pause_time:  # err=desired-requested=70-67=3
-    #   can_sends.append(create_accel_command(self.packer, "plus1"))
-    #   self.last_time_button_pressed = current_time_ms
-    #   print("+plus1      ", requestedSpeed, "    -    ", CS.out.cruiseState.speed)
-    # elif control.actuators.brake >0.5 and control.enabled and buttons_pause_time:  # err=desired-requested=60-67=-7
-    #   can_sends.append(create_accel_command(self.packer, "minus1"))
-    #   self.last_time_button_pressed = current_time_ms
-    #   print("-minus1      ", requestedSpeed, "    -    ", CS.out.cruiseState.speed)
 
       # apply_accel =actuators.gas - actuators.brake
     # apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
@@ -184,14 +172,14 @@ class CarController:
     # steer angle
     if control.enabled:
       apply_angle = control.actuators.steerAngle
-      angle_lim = interp(CS.out.v_ego, ANGLE_MAX_BP, ANGLE_MAX_V)
+      angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX_V)
       apply_angle = clip(apply_angle, -angle_lim, angle_lim)
 
       # windup slower
       if self.last_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_angle):
-        angle_rate_lim = interp(CS.out.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_V)
+        angle_rate_lim = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_V)
       else:
-        angle_rate_lim = interp(CS.out.v_ego, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
+        angle_rate_lim = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
 
       apply_angle = clip(apply_angle, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim)
 
