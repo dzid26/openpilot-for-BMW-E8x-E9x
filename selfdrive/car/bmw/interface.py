@@ -8,6 +8,8 @@ from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness,
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.interfaces import CarInterfaceBase
 
+ButtonType = car.CarState.ButtonEvent.Type
+
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
@@ -108,11 +110,34 @@ class CarInterface(CarInterfaceBase):
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngle * CV.DEG_TO_RAD, ret.vEgo)
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
+    buttonEvents = []
+    #cruise button events - used to change target speed
+    if self.CS.cruise_plus != self.CS.prev_cruise_plus:
+      be = car.CarState.ButtonEvent.new_message()
+      print(self.CS.cruise_plus)
+      be.type = ButtonType.accelCruise
+      be.pressed = self.CS.cruise_plus  #true in rising edge
+      buttonEvents.append(be)
+    if self.CS.cruise_minus != self.CS.prev_cruise_minus:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.decelCruise
+      be.pressed = self.CS.cruise_minus  #true in rising edge
+      buttonEvents.append(be)
+    if self.CS.cruise_resume != self.CS.prev_cruise_resume:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.resumeCruise
+      be.pressed = self.CS.cruise_resume  #true in rising edge
+      buttonEvents.append(be)
+    if self.CS.cruise_cancel != self.CS.prev_cruise_cancel:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.cancel
+      be.pressed = self.CS.cruise_cancel  #true in rising edge
+      buttonEvents.append(be)
+
+    ret.buttonEvents = buttonEvents
 
     # events
     events = self.create_common_events(ret)
-    if self.CS.low_speed_lockout and self.CP.openpilotLongitudinalControl:
-      events.append(create_event('lowSpeedLockout', [ET.NO_ENTRY, ET.PERMANENT]))
     if ret.vEgo < self.CP.minEnableSpeed and self.CP.openpilotLongitudinalControl:
       events.append(create_event('speedTooLow', [ET.NO_ENTRY]))
       if c.actuators.gas > 0.1:
