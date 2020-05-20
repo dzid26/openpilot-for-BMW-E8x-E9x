@@ -10,8 +10,8 @@ from common.params import Params
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
-    # can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
-    # self.shifter_values = can_define.dv["GearSelectorSwitch"]['Gear']
+    can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
+    self.shifter_values = can_define.dv["TransmissionDataDisplay"]['ShiftLeverPosition']
     self.angle_offset = 0.
     self.steer_warning = False
     self.low_speed_lockout = False
@@ -33,6 +33,8 @@ class CarState(CarStateBase):
     self.prev_cruise_cancel = self.cruise_cancel
     self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
     self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
+
+    self.otherButons = False
 
   def update(self, cp_PT, cp_F):
     self.prev_cruise_plus = self.cruise_plus
@@ -69,8 +71,8 @@ class CarState(CarStateBase):
     ret.steeringAngle = (cp_F.vl['SteeringWheelAngle_DSC'][
       'SteeringPosition'])  # slightly quicker on F-CAN  TODO find the factor and put in DBC
     ret.steeringRate = (cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed'])
-    can_gear = int(cp_PT.vl["GearSelectorSwitch"]['Gear'])
-    ret.gearShifter = self.parse_gear_shifter('D')  #self.shifter_values.get(can_gear, None))
+    can_gear = int(cp_PT.vl["TransmissionDataDisplay"]['ShiftLeverPosition'])
+    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
     ret.leftBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0 and cp_PT.vl["TurnSignals"]['LeftTurn'] !=0   # blinking
     ret.rightBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0  and cp_PT.vl["TurnSignals"]['RightTurn'] !=0   # blinking
     right_blinker_pressed = cp_PT.vl["TurnSignals"]['RightTurn'] != 0
@@ -78,7 +80,7 @@ class CarState(CarStateBase):
     blinker_on = cp_PT.vl["TurnSignals"]['TurnSignalActive'] == 2
     # self.blinker_off = cp_PT.vl["TurnSignals"]['TurnSignalIdle'] == 2
 
-    ret.genericToggle = cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
+    self.otherButons = cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
                         cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0
     ret.steeringTorque = 0
     # do lane change after releasing blinker stalk
@@ -122,7 +124,7 @@ class CarState(CarStateBase):
     signals = [  # signal name, message name, default value
       # sig_name, sig_address, default
       ("BrakePressed", "EngineAndBrake", 0),
-      ("Gear", "GearSelectorSwitch", 0),
+      ("ShiftLeverPosition", "TransmissionDataDisplay", 0),
       ("AcceleratorPedalPressed", "AccPedal", 0),
       ("AcceleratorPedalPercentage", "AccPedal", 0),
       ("VehicleSpeed", "Speed", 0),
