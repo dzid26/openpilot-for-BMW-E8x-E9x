@@ -133,6 +133,11 @@ class CarInterface(CarInterfaceBase):
       be.type = ButtonType.cancel
       be.pressed = self.CS.cruise_cancel  #true in rising edge
       buttonEvents.append(be)
+    if self.CS.otherButons:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.altButton1
+      be.pressed = self.CS.otherButons != 0
+      buttonEvents.append(be)
 
     ret.buttonEvents = buttonEvents
 
