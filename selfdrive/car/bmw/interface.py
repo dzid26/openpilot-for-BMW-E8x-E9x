@@ -112,6 +112,16 @@ class CarInterface(CarInterfaceBase):
 
     buttonEvents = []
     #cruise button events - used to change target speed
+    if self.CS.right_blinker_pressed:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.rightBlinker
+      be.pressed = True
+      buttonEvents.append(be)
+    if self.CS.left_blinker_pressed:
+      be = car.CarState.ButtonEvent.new_message()
+      be.type = ButtonType.leftBlinker
+      be.pressed = True
+      buttonEvents.append(be)
     if self.CS.cruise_plus != self.CS.prev_cruise_plus:
       be = car.CarState.ButtonEvent.new_message()
       print(self.CS.cruise_plus)
@@ -133,16 +143,16 @@ class CarInterface(CarInterfaceBase):
       be.type = ButtonType.cancel
       be.pressed = self.CS.cruise_cancel  #true in rising edge
       buttonEvents.append(be)
-    if self.CS.otherButons:
+    if self.CS.otherButtons:
       be = car.CarState.ButtonEvent.new_message()
       be.type = ButtonType.altButton1
-      be.pressed = self.CS.otherButons != 0
+      be.pressed = True
       buttonEvents.append(be)
 
     ret.buttonEvents = buttonEvents
 
     # events
-    events = self.create_common_events(ret)
+    events = self.create_common_events(ret, [], 100 * CV.MPH_TO_MS)
     if ret.vEgo < self.CP.minEnableSpeed and self.CP.openpilotLongitudinalControl:
       events.append(create_event('speedTooLow', [ET.NO_ENTRY]))
       if c.actuators.gas > 0.1:
@@ -158,8 +168,6 @@ class CarInterface(CarInterfaceBase):
     #    (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
     #   events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
-    # if ret.gasPressed: # or self.gas_pressed_prev1 or self.gas_pressed_prev2 or self.gas_pressed_prev3:
-    #   events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
     if ret.cruiseState.enabled and not self.cruise_enabled_prev:
       events.append(create_event('pcmEnable', [ET.ENABLE]))
     if   self.CS.cruise_resume and not self.CS.prev_cruise_resume and self.cruise_enabled_prev and ret.cruiseState.enabled and self.enabled: #stay in cruise control, but disable OpenPilot

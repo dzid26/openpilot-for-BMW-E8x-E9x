@@ -34,6 +34,8 @@ class CarState(CarStateBase):
     self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
     self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
 
+    self.right_blinker_pressed = False
+    self.left_blinker_pressed = False
     self.otherButons = False
 
   def update(self, cp_PT, cp_F):
@@ -53,7 +55,7 @@ class CarState(CarStateBase):
 
     ret.brakePressed = cp_PT.vl["EngineAndBrake"]['BrakePressed'] != 0
     ret.gas = cp_PT.vl['AccPedal']["AcceleratorPedalPercentage"]
-    ret.gasPressed = False # ret.gas > 20
+    ret.gasPressed = cp_PT.vl['AccPedal']["AcceleratorPedalPressed"] != 0
 
     ret.espDisabled = False  # cp.vl["ESP_CONTROL"]['TC_DISABLED'] ==1
 
@@ -75,16 +77,16 @@ class CarState(CarStateBase):
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
     ret.leftBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0 and cp_PT.vl["TurnSignals"]['LeftTurn'] !=0   # blinking
     ret.rightBlinker = cp_PT.vl["TurnSignals"]['TurnSignalActive'] !=0  and cp_PT.vl["TurnSignals"]['RightTurn'] !=0   # blinking
-    right_blinker_pressed = cp_PT.vl["TurnSignals"]['RightTurn'] != 0
-    left_blinker_pressed = cp_PT.vl["TurnSignals"]['LeftTurn'] != 0
+    self.right_blinker_pressed = cp_PT.vl["TurnSignals"]['RightTurn'] != 0
+    self.left_blinker_pressed = cp_PT.vl["TurnSignals"]['LeftTurn'] != 0
     blinker_on = cp_PT.vl["TurnSignals"]['TurnSignalActive'] == 2
     # self.blinker_off = cp_PT.vl["TurnSignals"]['TurnSignalIdle'] == 2
 
-    self.otherButons = cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
+    self.otherButtons = cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
                         cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0
     ret.steeringTorque = 0
     # do lane change after releasing blinker stalk
-    ret.steeringPressed = blinker_on and not right_blinker_pressed and not left_blinker_pressed
+    ret.steeringPressed = blinker_on and not self.right_blinker_pressed and not self.left_blinker_pressed
 
     self.cruise_plus = cp_F.vl["CruiseControl"]['plus1mph_request'] != 0
     self.cruise_minus = cp_F.vl["CruiseControl"]['minus1mph_request'] != 0
