@@ -90,7 +90,7 @@ def data_sample(CI, CC, sm, can_sock, state, mismatch_counter, can_error_counter
 
   overtemp = sm['thermal'].thermalStatus >= ThermalStatus.red
   free_space = sm['thermal'].freeSpace < 0.07  # under 7% of space free no enable allowed
-  low_battery = 0.0001 < sm['thermal'].batteryPercent < 1 and sm['thermal'].chargingError  # with low battery, while discharging, OP should not allowed
+  low_battery = 0.0001 < sm['thermal'].batteryPercent < 3 and sm['thermal'].chargingError  # with low battery, while discharging, OP should not allowed
   mem_low = sm['thermal'].memUsedPercent > 90
 
   # Create events for battery, temperature and disk space
