@@ -141,7 +141,7 @@ class Cluster():
       "vLeadK": float(v_ego + lead_msg.relVel),
       "aLeadK": float(0),
       "aLeadTau": _LEAD_ACCEL_TAU,
-      "fcw": False,
+      "fcw": self.is_potential_vision_fcw(lead_msg.prob, v_ego),
       "modelProb": float(lead_msg.prob),
       "radar": False,
       "status": True
@@ -157,3 +157,6 @@ class Cluster():
 
   def is_potential_fcw(self, model_prob):
     return model_prob > .9
+
+  def is_potential_vision_fcw(self, model_prob, v_ego):
+    return model_prob > .9 and v_ego >= 14
