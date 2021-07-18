@@ -50,7 +50,7 @@ class CarInterfaceBase():
     # ret.isPandaBlack = has_relay
 
     # standard ALC params
-    ret.steerControlType = car.CarParams.SteerControlType.torque
+    ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerMaxBP = [0.]
     ret.steerMaxV = [1.]
 

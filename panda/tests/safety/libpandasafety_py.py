@@ -98,6 +98,12 @@ void set_volkswagen_torque_driver(int min, int max);
 void init_tests_nissan(void);
 void set_nissan_desired_angle_last(int t);
 
+void init_tests_bmw(void);
+void set_bmw_desired_angle_last(int t);
+
+void set_gmlan_digital_output(int to_set);
+int get_gmlan_digital_output(void);
+
 """)
 
 libpandasafety = ffi.dlopen(libpandasafety_fn)

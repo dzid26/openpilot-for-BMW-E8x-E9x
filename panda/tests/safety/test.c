@@ -77,6 +77,8 @@ uint8_t hw_type = HW_TYPE_UNKNOWN;
 #define static
 #include "safety.h"
 
+int gmlan_digital_out_dummy = false;
+
 void set_controls_allowed(bool c){
   controls_allowed = c;
 }
@@ -259,6 +261,10 @@ void set_nissan_desired_angle_last(int t){
   nissan_desired_angle_last = t;
 }
 
+void set_bmw_desired_angle_last(int t){
+  bmw_desired_angle_last = t;
+}
+
 void init_tests(void){
   // get HW_TYPE from env variable set in test.sh
   hw_type = atoi(getenv("HW_TYPE"));
@@ -353,7 +359,16 @@ void init_tests_nissan(void){
   set_timer(0);
 }
 
+void init_tests_bmw(void){
+  init_tests();
+  bmw_desired_angle_last = 0;
+  lever_position = 0;
+
+  set_timer(0);
+}
+
 void set_gmlan_digital_output(int to_set){
+  gmlan_digital_out_dummy = to_set;
 }
 
 void reset_gmlan_switch_timeout(void){
@@ -362,3 +377,6 @@ void reset_gmlan_switch_timeout(void){
 void gmlan_switch_init(int timeout_enable){
 }
 
+int get_gmlan_digital_output(){
+  return gmlan_digital_out_dummy;
+}

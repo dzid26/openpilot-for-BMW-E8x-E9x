@@ -7,6 +7,13 @@ import unittest
 import matplotlib
 matplotlib.use('svg')
 
+import sys
+from unittest.mock import MagicMock
+sys.modules['common.realtime']  = MagicMock() #dumy module
+sys.modules['cereal.messaging.messaging_pyx']  = MagicMock() #dumy module
+sys.modules['opendbc.can.parser_pyx']  = MagicMock() #dumy module
+sys.modules['selfdrive.boardd.boardd_api_impl']  = MagicMock() #dumy module
+
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CruiseButtons as CB
 from selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver

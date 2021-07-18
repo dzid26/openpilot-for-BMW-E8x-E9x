@@ -1,9 +1,9 @@
 from cereal import car
 from common.numpy_fast import clip, interp
 from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_command, make_can_msg
-from selfdrive.car.bmw.bmwcan import create_steer_command, create_accel_command
+from selfdrive.car.bmw.bmwcan import create_steer_command, create_accel_command, create_steer_current_command
                                            #create_ui_command, create_fcw_command
-from selfdrive.car.bmw.values import CAR, SteerLimitParams
+from selfdrive.car.bmw.values import CAR, SteerActuatorParams
 from opendbc.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 
@@ -20,16 +20,18 @@ ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 
 # Steer angle limits (tested at the Crows Landing track and considered ok)
-ANGLE_MAX_BP = [0., 5.]
-ANGLE_MAX_V = [510., 300.]
+ANGLE_MAX_BP = [5., 15., 30]
+ANGLE_MAX_V = [200., 20., 10.]
 ANGLE_DELTA_BP = [0., 5., 15.]
 ANGLE_DELTA_V = [5., .8, .15]     # windup limit
-ANGLE_DELTA_VU = [5., 3.5, 0.4]   # unwind limit
+ANGLE_DELTA_VU = [5., 3.5, 0.4]   # unwind
 
-TARGET_IDS = [0x340, 0x341, 0x342, 0x343, 0x344, 0x345,
-              0x363, 0x364, 0x365, 0x370, 0x371, 0x372,
-              0x373, 0x374, 0x375, 0x380, 0x381, 0x382,
-              0x383]
+def calc_steering_resistive_torque(angle, vEgo, steerActuatorParams):
+  angle_sign = int(angle < 0)
+  speed_dep_linear_curve = SteerActuatorParams.STEER_TORQUE_OFFSET + angle_sign * max(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) *vEgo ** 2 * steerActuatorParams.CENTERING_COEFF
+  k = min(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) / steerActuatorParams.STEER_LINEAR_REGION
+  return -((1-k)* steerActuatorParams.ZERO_ANGLE_HOLD_TQ * angle_sign + k*speed_dep_linear_curve) #interpolate between zero hold torque and linear region starting point at a given vehicle speed
+
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
@@ -57,31 +59,7 @@ def process_hud_alert(hud_alert):
     fcw = 1
   elif hud_alert == VisualAlert.steerRequired:
     steer = 1
-
   return steer, fcw
-
-# def ipas_state_transition(steer_angle_enabled, enabled, ipas_active, ipas_reset_counter):
-#
-#   if enabled and not steer_angle_enabled:
-#     #ipas_reset_counter = max(0, ipas_reset_counter - 1)
-#     #if ipas_reset_counter == 0:
-#     #  steer_angle_enabled = True
-#     #else:
-#     #  steer_angle_enabled = False
-#     #return steer_angle_enabled, ipas_reset_counter
-#     return True, 0
-#
-#   elif enabled and steer_angle_enabled:
-#     if steer_angle_enabled and not ipas_active:
-#       ipas_reset_counter += 1
-#     else:
-#       ipas_reset_counter = 0
-#     if ipas_reset_counter > 10:  # try every 0.1s
-#       steer_angle_enabled = False
-#     return steer_angle_enabled, ipas_reset_counter
-#
-#   else:
-#     return False, 0
 
 
 class CarController:
@@ -96,27 +74,27 @@ class CarController:
     self.last_standstill = False
     self.standstill_req = False
     self.angle_control = False
-    self.last_time_button_pressed = 0
+    self.last_frame_cruise_cmd_sent = 0
+    self.last_type_cruise_cmd_sent = 0
+    self.cruise_speed_prev = 0
 
     self.steer_angle_enabled = False
     self.ipas_reset_counter = 0
     self.last_fault_frame = -200
     self.steer_rate_limited = False
-
+    self.cruise_bus = 0
+    if CP.carFingerprint in [CAR.E82, CAR.E90]:
+      self.cruise_bus = 0 #PT-CAN
+    elif CP.carFingerprint in [CAR.E82_DCC, CAR.E90_DCC]:
+      self.cruise_bus = 1 #F-CAN
     self.fake_ecus = set()
-    # if enable_camera: self.fake_ecus.add(ECU.CAM)
-    # if enable_dsu: self.fake_ecus.add(ECU.DSU)
-    # if enable_apg: self.fake_ecus.add(ECU.APGS)
 
     self.packer = CANPacker(dbc_name)
 
   def update(self, control, CS, frame):
     requestedSpeed = control.cruiseControl.speedOverride
     current_time_ms = _current_time_millis()
-    print(control.enabled, "SpeedErr: ", requestedSpeed * CV.MS_TO_MPH,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.out.steeringAngle)
     can_sends = []
-    # test
-    # can_sends.append(create_steer_command(self.packer, -5, -7777, 2))
 
     # *** compute control surfaces ***
     CC_cancel_cmd = 0
@@ -129,85 +107,115 @@ class CarController:
     #   CC_cancel_cmd = control.cruiseControl.cancel
     # CC_cancel_cmd = control.cruiseControl.cancel
 
-    buttons_pause_time = current_time_ms > (self.last_time_button_pressed + 100)
 
-    if CC_cancel_cmd and buttons_pause_time:
-      can_sends.append(create_accel_command(self.packer, "cancel"))
-      self.last_time_button_pressed = current_time_ms
+
+    # detect check driver pressing as well
+    # check whether speed changed in the direction that was commanded - covers OP and driver's commands
+    if (self.cruise_speed_prev - CS.out.cruiseState.speed) != 0:
+      self.last_type_cruise_cmd_sent = self.cruise_speed_prev - CS.out.cruiseState.speed
+
+      # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
+      #it was probably driver pressing stalks. In that case update the timestamp too
+      if frame - self.last_frame_cruise_cmd_sent > 1: #ignore if cruiseState.speed changed shortly after sending command
+        self.last_frame_cruise_cmd_sent = frame
+
+    frames_since_cruise_sent = frame - self.last_frame_cruise_cmd_sent
+
+    # hysteresis
+    speed_diff_req = requestedSpeed - CS.out.cruiseState.speed
+    CC_STEP = 1 * CV.KPH_TO_MS  # metric car settings
+    speed_margin_thresh = 0.1 * CV.KPH_TO_MS
+    hysteresis_timeout = 20 #200ms
+    # hysteresis, since cruiseState.speed changes in steps and
+    if self.last_type_cruise_cmd_sent > 0 and frames_since_cruise_sent < hysteresis_timeout: #maybe instead just look at vTargetFuture
+      speed_diff_err_up =   speed_margin_thresh
+      speed_diff_err_dn =  -CC_STEP
+    elif self.last_type_cruise_cmd_sent < 0 and frames_since_cruise_sent < hysteresis_timeout:
+      speed_diff_err_up =  CC_STEP
+      speed_diff_err_dn = -speed_margin_thresh
+    else:
+      speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
+      speed_diff_err_dn = -CC_STEP / 2
+
+    cruise_tick = 20 # default rate
+    if (control.actuators.brake > 0.2 or control.actuators.gas > 0.2) and abs(speed_diff_req)>1:
+      cruise_tick = 10   #-1 no delay - emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
+    # elif round(abs(speed_diff_req)) == 1:
+    #   self.last_frame_cruise_cmd_sent = frame #reset counter
+    #   cruise_tick = 35 #slow period
+
+
+    if CC_cancel_cmd and frames_since_cruise_sent > cruise_tick:
+      can_sends.append(create_accel_command(self.packer, "cancel", self.cruise_bus, frame))
+      self.last_frame_cruise_cmd_sent = frame
+      self.last_type_cruise_cmd_sent = 0
       print("cancel")
-    elif ( ( requestedSpeed - CS.out.cruiseState.speed)> 0.5 *CV.MPH_TO_MS) and control.enabled  and buttons_pause_time:# err=desired-requested=70-67=3
-      can_sends.append(create_accel_command(self.packer, "plus1"))
-      self.last_time_button_pressed = current_time_ms
-      print("+plus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
-    elif (( CS.out.cruiseState.speed - requestedSpeed )> 0.6 *CV.MPH_TO_MS) and control.enabled and buttons_pause_time:# err=desired-requested=60-67=-7
-      can_sends.append(create_accel_command(self.packer, "minus1"))
-      self.last_time_button_pressed = current_time_ms
-      print("-minus1      ", requestedSpeed, "    -    ",    CS.out.cruiseState.speed)
+    elif speed_diff_req > speed_diff_err_up and control.enabled and frames_since_cruise_sent > cruise_tick:
+      can_sends.append(create_accel_command(self.packer, "plus1", self.cruise_bus, frame))
+      self.last_frame_cruise_cmd_sent = frame
+      self.last_type_cruise_cmd_sent = +1
+    elif speed_diff_req < speed_diff_err_dn and control.enabled and frames_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
+      can_sends.append(create_accel_command(self.packer, "minus1", self.cruise_bus, frame))
+      self.last_frame_cruise_cmd_sent = frame
+      self.last_type_cruise_cmd_sent = -1
 
+    self.cruise_speed_prev = CS.out.cruiseState.speed
 
-      # apply_accel =actuators.gas - actuators.brake
-    # apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-    # apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
-
-    # steer torque
-    new_steer = int(round(control.actuators.steer * SteerLimitParams.STEER_MAX))
-    apply_steer = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, SteerLimitParams)
-    self.steer_rate_limited = new_steer != apply_steer
 
     # only cut torque when steer state is a known fault
     # if CS.out.steer_state in [9, 25]:
     #   self.last_fault_frame = frame
 
     # Cut steering for 2s after fault
+    apply_hold_torque = 0
     if not control.enabled or (frame - self.last_fault_frame < 200):
-      apply_steer = 0
       apply_steer_req = 0
     else:
       apply_steer_req = 1
 
-    # self.steer_angle_enabled, self.ipas_reset_counter = \
-    #   ipas_state_transition(self.steer_angle_enabled, enabled, CS.out.ipas_active, self.ipas_reset_counter)
-    #print("{0} {1} {2}".format(self.steer_angle_enabled, self.ipas_reset_counter, CS.out.ipas_active))
-
     # steer angle
     if control.enabled:
-      apply_angle = control.actuators.steerAngle
       angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX_V)
-      apply_angle = clip(apply_angle, -angle_lim, angle_lim)
-
+      apply_angle = clip(control.actuators.steerAngle, -angle_lim, angle_lim)
+      
       # windup slower
       if self.last_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_angle):
         angle_rate_lim = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_V)
       else:
         angle_rate_lim = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
+      apply_steer_delta = CS.out.steeringAngle - apply_angle
 
+      # steer torque
+      Isteer = 0.05 #estimated moment of inertia (at least: steering mass * steering wheel radius^2 = 2kg * .15^2 = 0.045kgm2)
+      inertia_torque = - Isteer * (apply_steer_delta * 100 - CS.out.steeringRate) * 3.141592 / 180  #convert deg to rad/s2
+      new_steer = abs(calc_steering_resistive_torque(CS.out.vEgo, apply_angle, SteerActuatorParams) + inertia_torque)
+      # apply_hold_torque = apply_toyota_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps,
+      #                                                      SteerLimitParams)
+
+      can_sends.append(create_steer_current_command(self.packer, #.5, 1.2))
+        clip(new_steer / SteerActuatorParams.ACTUATOR_RATIO / SteerActuatorParams.RATED_HOLD_TQ * SteerActuatorParams.RATED_CURRENT, 0, SteerActuatorParams.MAX_CURRENT),
+                                                    SteerActuatorParams.MAX_CURRENT))
+      # steer angle
       apply_angle = clip(apply_angle, self.last_angle - angle_rate_lim, self.last_angle + angle_rate_lim)
-
-      can_sends.append(create_steer_command(self.packer, (CS.out.steeringAngle - apply_angle) / 1.8 * 256 * 19 * 25/12 ))
+      self.steer_rate_limited = control.actuators.steerAngle != apply_angle  # let PID know controller is limiting rate
+      can_sends.append(create_steer_command(self.packer,
+                        apply_steer_delta * SteerActuatorParams.ACTUATOR_RATIO * SteerActuatorParams.POSITION_SCALING)), #angle
+      # *** control msgs ***
+      # if (frame % 10) == 0: #slow print
+        # print("SteerAngleErr {0} Inertia  {1} Brake {2}, SpeedDiff {3}".format(control.actuators.steerAngle - CS.out.steeringAngle,
+        #                                                          inertia_torque,
+        #                                                          control.actuators.brake, speed_diff_req))
     else:
       apply_angle = CS.out.steeringAngle
+      if (frame % 100) == 0: #slow print
+        print("SteerAngle {0} SteerSpeed {1}".format(CS.out.steeringAngle,
+                                                                 CS.out.steeringRate))
 
 
-    self.last_steer = apply_steer
+    self.last_steer = apply_hold_torque
     self.last_angle = apply_angle
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
-
-
-    #*** control msgs ***
-    #print("steer {0} {1} {2} {3}".format(apply_steer, min_lim, max_lim, CS.out.steeringTorqueEps)
-
-      #if self.angle_control:
-      #  can_sends.append(create_steer_command(self.packer, 0., 0, frame))
-      #else:
-      #  can_sends.append(create_steer_command(self.packer, apply_steer, apply_steer_req, frame))
-
-
-
-
-
-
-
 
 
 

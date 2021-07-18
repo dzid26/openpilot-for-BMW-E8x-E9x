@@ -1,4 +1,4 @@
-CC = clang
+CC = gcc
 CCFLAGS = -O3 -fPIC -DPANDA -I.
 
 .PHONY: all
