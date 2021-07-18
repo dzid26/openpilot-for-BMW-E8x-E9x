@@ -242,4 +242,4 @@ class CarState(CarStateBase):
     ]
     checks = [ ] # refresh frequency Hz
       # ("TMCL_actuatorStatus", 100), ] don't check refreshing because when steering not active, the messages are not returned
-    return CANParser('OpenActuator', signals, checks, 2)  # 2: Actuator-CAN,
+    return CANParser('trinamic', signals, checks, 2)  # 2: Actuator-CAN,
