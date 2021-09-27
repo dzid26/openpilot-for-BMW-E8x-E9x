@@ -64,7 +64,7 @@ static int bmw_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
   }
 
   if (addr == 0x194){ //disable on cruise stalk cancel
-    if { ((GET_BYTE(to_push, 2) >> 4) & 1)
+    if ((GET_BYTE(to_push, 2) >> 4) & 1) {
       controls_allowed = 0;
       }
   }
