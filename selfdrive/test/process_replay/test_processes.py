@@ -14,6 +14,7 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
+  ("BMW", "/home/dzid_/winhome/Downloads/OP_logs/706e691c01496bd3_2020-10-05--13-22-41--3--rlog.bz2"),
   ("HONDA", "0375fdf7b1ce594d|2019-06-13--08-32-25--3"),      # HONDA.ACCORD
   ("HONDA", "99c94dc769b5d96e|2019-08-03--14-19-59--2"),      # HONDA.CIVIC
   ("TOYOTA", "77611a1fac303767|2020-02-29--13-29-33--3"),     # TOYOTA.COROLLA_TSS2
@@ -38,6 +39,8 @@ FULL_TEST = len(sys.argv) <= 1
 
 def get_segment(segment_name, original=True):
   route_name, segment_num = segment_name.rsplit("--", 1)
+  if os.path.isfile(segment_name):
+    return segment_name
   if original:
     rlog_url = BASE_URL + "%s/%s/rlog.bz2" % (route_name.replace("|", "/"), segment_num)
   else:
@@ -166,7 +169,8 @@ if __name__ == "__main__":
 
       cmp_log_fn = os.path.join(process_replay_dir, "%s_%s_%s.bz2" % (segment, cfg.proc_name, ref_commit))
       results[segment][cfg.proc_name] = test_process(cfg, lr, cmp_log_fn, args.ignore_fields, args.ignore_msgs)
-    os.remove(rlog_fn)
+    if "--rlog" not in rlog_fn: #only if temp file
+      os.remove(rlog_fn)
 
   diff1, diff2, failed = format_diff(results, ref_commit)
   with open(os.path.join(process_replay_dir, "diff.txt"), "w") as f:
