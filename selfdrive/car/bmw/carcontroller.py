@@ -27,7 +27,7 @@ ANGLE_DELTA_V = [5., .8, .15]     # windup limit
 ANGLE_DELTA_VU = [5., 3.5, 0.4]   # unwind
 
 def calc_steering_resistive_torque(angle, vEgo, steerActuatorParams):
-  angle_sign = int(angle < 0)
+  angle_sign = 1 if angle > 0 else -1
   speed_dep_linear_curve = SteerActuatorParams.STEER_TORQUE_OFFSET + angle_sign * max(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) *vEgo ** 2 * steerActuatorParams.CENTERING_COEFF
   k = min(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) / steerActuatorParams.STEER_LINEAR_REGION
   return -((1-k)* steerActuatorParams.ZERO_ANGLE_HOLD_TQ * angle_sign + k*speed_dep_linear_curve) #interpolate between zero hold torque and linear region starting point at a given vehicle speed
