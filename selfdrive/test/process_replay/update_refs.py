@@ -11,7 +11,7 @@ from tools.lib.logreader import LogReader
 
 if __name__ == "__main__":
 
-  no_upload = "--no-upload" in sys.argv
+  no_upload = True
 
   process_replay_dir = os.path.dirname(os.path.abspath(__file__))
   ref_commit_fn = os.path.join(process_replay_dir, "ref_commit")

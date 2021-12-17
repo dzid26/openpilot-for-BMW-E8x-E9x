@@ -1,1 +1,3 @@
 simple_kalman_impl.c
+*.pyd
+/build
