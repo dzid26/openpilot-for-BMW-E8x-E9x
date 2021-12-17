@@ -4,7 +4,7 @@ from opendbc.can.can_define import CANDefine
 from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
-from selfdrive.car.bmw.values import CAR, DBC, STEER_THRESHOLD, NO_DSU_CAR
+from selfdrive.car.bmw.values import CAR, DBC
 from common.params import Params
 
 class CarState(CarStateBase):
@@ -147,6 +147,7 @@ class CarState(CarStateBase):
     ret.genericToggle = self.sportMode
 
 
+    self.prev_gasPressed = ret.gasPressed
     return ret
 
   @staticmethod
@@ -187,6 +188,7 @@ class CarState(CarStateBase):
       ("Resume_request", "CruiseControl", 0),
       ("Cancel_request_up_stalk", "CruiseControl", 0),
       ("Cancel_request_up_or_down_stalk", "CruiseControl", 0),
+      ("DSC_full_off", "StatusDSC_KCAN", 0),
     ]
 
     checks = [  # refresh frequency Hz  TODO measure with PCAN

@@ -199,14 +199,10 @@ class CarInterface(CarInterfaceBase):
     # if self.CS.gas_kickdown:
     #   events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
-    #reconstruct absolute command (with all the limits).
-    # It basically desired_angle with carcontroller and stepper driver rate limits. Openloop stepper should follow it unless it's skipping steps
-    steerCmdLimited_prev = self.steeringAngle_prev + self.CS.steer_angle_delta_cmd
-    # from carcontroller - steering actuator when enabled and when genericToggle is false
-    steeringActuatorEnabled = self.enabled and not self.CS.out.genericToggle
+    steeringActuatorEnabled = self.enabled and not self.CS.sportMode
     # wait for steering actuator to be enabled for two samples to get stepper delta calculated correctly
-    if steeringActuatorEnabled and self.steeringActuatorEnabled_prev and detect_stepper_override(steerCmdLimited_prev, ret.steeringAngle, ret.vEgo, self.CP.lateralTuning.pid.kf, SteerActuatorParams.STEER_TORQUE_OFFSET):
-       events.append(create_event('steerUnavailable', [ET.IMMEDIATE_DISABLE]))
+    # if steeringActuatorEnabled and self.steeringActuatorEnabled_prev and detect_stepper_override(steerCmdLimited_prev, ret.steeringAngle, ret.vEgo, self.CP.lateralTuning.pid.kf, SteerActuatorParams.STEER_TORQUE_OFFSET):
+    #    events.append(create_event('steerUnavailable', [ET.IMMEDIATE_DISABLE]))  #TODO clean up this event - detect driver overriding controls
     self.steeringActuatorEnabled_prev = steeringActuatorEnabled
 
     # update previous brake/gas pressed

@@ -1,8 +1,7 @@
 from cereal import car
 from common.numpy_fast import clip, interp
 from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_command, make_can_msg
-from selfdrive.car.bmw.bmwcan import create_steer_command, create_accel_command, create_steer_current_command
-                                           #create_ui_command, create_fcw_command
+from selfdrive.car.bmw.bmwcan import create_steer_command, create_accel_command
 from selfdrive.car.bmw.values import CAR, SteerActuatorParams, SteerLimitParams
 from opendbc.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
@@ -21,14 +20,14 @@ DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 
-# Steer angle limits (tested at the Crows Landing track and considered ok)
+# Steer angle limits
 ANGLE_MAX_BP = [5., 15., 30]  #m/s
 ANGLE_MAX = [200., 20., 10.] #deg
 ANGLE_RATE_BP = [0., 5., 15.]
 ANGLE_RATE_WINDUP = [500., 80., 15.]     #deg/s windup rate limit
 ANGLE_RATE_UNWIND = [500., 350., 40.]  #deg/s unwind rate limit
 
-def calc_steering_resistive_torque(angle, vEgo, steerActuatorParams):
+def calc_steering_torque_hold(angle, vEgo, steerActuatorParams):
   angle_sign = 1 if angle > 0 else -1
   speed_dep_linear_curve = SteerActuatorParams.STEER_TORQUE_OFFSET + angle_sign * max(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) *vEgo ** 2 * steerActuatorParams.CENTERING_COEFF
   k = min(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) / steerActuatorParams.STEER_LINEAR_REGION
@@ -199,23 +198,25 @@ class CarController:
       # steer torque
       I_steering = 0.05 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
       inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
-      steer_tq = abs(calc_steering_resistive_torque(CS.out.vEgo, target_angle_lim, SteerActuatorParams) + inertia_tq)      
       
-      can_sends.append(create_steer_current_command(self.packer, #.5, 1.2))
-        clip(steer_tq / SteerActuatorParams.ACTUATOR_RATIO / SteerActuatorParams.RATED_HOLD_TQ * SteerActuatorParams.RATED_CURRENT, 0, SteerActuatorParams.MAX_CURRENT),
-                                                    SteerActuatorParams.MAX_CURRENT))
-      can_sends.append(create_steer_command(self.packer,
-                        target_angle_delta * SteerActuatorParams.ACTUATOR_RATIO * SteerActuatorParams.POSITION_SCALING)), #angle
+      # add friciton compensation feed-forward
+      steer_tq = calc_steering_torque_hold(CS.out.vEgo, target_angle_lim, SteerActuatorParams) + inertia_tq
+
+      # explicitly clip torque before sending on CAN
+      steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
+      
+      can_sends.append(create_steer_command(int(True), target_angle_delta, steer_tq, frame))
       # *** control msgs ***
-      # if (frame % 10) == 0: #slow print
-        # print("SteerAngleErr {0} Inertia  {1} Brake {2}, SpeedDiff {3}".format(control.actuators.steerAngle - CS.out.steeringAngle,
-        #                                                          inertia_torque,
-        #                                                          control.actuators.brake, speed_diff_req))
+      if (frame % 10) == 0: #slow print
+        print("SteerAngleErr {0} Inertia  {1} Brake {2}, SpeedDiff {3}".format(control.actuators.steerAngle - CS.out.steeringAngle,
+                                                                 inertia_tq,
+                                                                 control.actuators.brake, speed_diff_req))
     else:
       target_angle_lim = CS.out.steeringAngle
-      if (frame % 100) == 0: #slow print
-        print("SteerAngle {0} SteerSpeed {1}".format(CS.out.steeringAngle,
-                                                                 CS.out.steeringRate))
+      
+      # if (frame % 100) == 0: #slow print when disabled
+      #   print("SteerAngle {0} SteerSpeed {1}".format(CS.out.steeringAngle,
+                                                                #  CS.out.steeringRate))
 
 
     self.last_steer = apply_hold_torque

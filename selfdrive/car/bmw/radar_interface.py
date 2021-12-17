@@ -51,7 +51,6 @@ class RadarInterface(RadarInterfaceBase):
     self.updated_messages = set()
 
     # No radar dbc for cars without DSU which are not TSS 2.0
-    # TODO: make a adas dbc file for dsu-less models
     self.no_radar = CP.carFingerprint in NO_DSU_CAR and CP.carFingerprint not in TSS2_CAR
 
   def update(self, can_strings):
