@@ -170,10 +170,6 @@ class CarInterface(CarInterfaceBase):
 
     ret.buttonEvents = buttonEvents
 
-    steerCmdLimited_prev = self.steeringAngle_prev + self.CS.steer_angle_delta_cmd  # reconstruct absolute command (with all the limits)
-    print("\n delta: "); print(self.CS.steer_angle_delta_cmd)
-    print("reconstruct:"); print(round(steerCmdLimited_prev, 2));
-
     # events
     events = self.create_common_events(ret, [], gas_resume_speed = 999 * CV.MPH_TO_MS)
     if ret.vEgo < self.CP.minEnableSpeed and self.CP.openpilotLongitudinalControl:
