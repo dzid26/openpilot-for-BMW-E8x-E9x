@@ -15,6 +15,10 @@ class CarState(CarStateBase):
     self.angle_offset = 0.
     self.steer_warning = False
     self.low_speed_lockout = False
+    self.steer_angle_delta_cmd = 0.
+    self.steer_angle_cmd_motor= 0.
+    self.steer_angle_cmd_motor_prev = 0.
+    self.gas_kickdown = False
 
     self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"
     self.cruise_plus = False
@@ -36,9 +40,11 @@ class CarState(CarStateBase):
 
     self.right_blinker_pressed = False
     self.left_blinker_pressed = False
-    self.otherButons = False
+    self.otherButtons = False
+    self.prev_gasPressed = False
 
-  def update(self, cp_PT, cp_F):
+  def update(self, cp_PT, cp_F, cp_aux):
+    # set these prev states at the beginning because they are used outside the update()
     self.prev_cruise_plus = self.cruise_plus
     self.prev_cruise_minus = self.cruise_minus
     self.prev_cruise_plus5 = self.cruise_plus5
@@ -110,13 +116,13 @@ class CarState(CarStateBase):
         self.is_metric = True
       elif abs(ret.cruiseState.speed / ret.vEgoRaw- CV.MS_TO_MPH) < 0.3:
         self.is_metric = False
-
-    self.is_metric = True
+    self.is_metric = True #TODO implement detection car setting for cruise control locality
     if self.is_metric: #recalculate to the right unit
       ret.cruiseState.speed = ret.cruiseState.speed * CV.KPH_TO_MS
     else:
       ret.cruiseState.speed = ret.cruiseState.speed * CV.MPH_TO_MS
 
+    ret.genericToggle = cp_PT.vl["TransmissionDataDisplay"]['SportButtonState'] != 0
     ret.steeringTorqueEps = 0
 
     return ret

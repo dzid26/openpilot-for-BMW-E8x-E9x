@@ -57,31 +57,7 @@ def process_hud_alert(hud_alert):
     fcw = 1
   elif hud_alert == VisualAlert.steerRequired:
     steer = 1
-
   return steer, fcw
-
-# def ipas_state_transition(steer_angle_enabled, enabled, ipas_active, ipas_reset_counter):
-#
-#   if enabled and not steer_angle_enabled:
-#     #ipas_reset_counter = max(0, ipas_reset_counter - 1)
-#     #if ipas_reset_counter == 0:
-#     #  steer_angle_enabled = True
-#     #else:
-#     #  steer_angle_enabled = False
-#     #return steer_angle_enabled, ipas_reset_counter
-#     return True, 0
-#
-#   elif enabled and steer_angle_enabled:
-#     if steer_angle_enabled and not ipas_active:
-#       ipas_reset_counter += 1
-#     else:
-#       ipas_reset_counter = 0
-#     if ipas_reset_counter > 10:  # try every 0.1s
-#       steer_angle_enabled = False
-#     return steer_angle_enabled, ipas_reset_counter
-#
-#   else:
-#     return False, 0
 
 
 class CarController:
@@ -96,27 +72,27 @@ class CarController:
     self.last_standstill = False
     self.standstill_req = False
     self.angle_control = False
-    self.last_time_button_pressed = 0
+    self.last_frame_cruise_cmd_sent = 0
+    self.last_type_cruise_cmd_sent = 0
+    self.cruise_speed_prev = 0
 
     self.steer_angle_enabled = False
     self.ipas_reset_counter = 0
     self.last_fault_frame = -200
     self.steer_rate_limited = False
-
+    self.cruise_bus = 0
+    if CP.carFingerprint in [CAR.E82, CAR.E90]:
+      self.cruise_bus = 0 #PT-CAN
+    elif CP.carFingerprint in [CAR.E82_DCC, CAR.E90_DCC]:
+      self.cruise_bus = 1 #F-CAN
     self.fake_ecus = set()
-    # if enable_camera: self.fake_ecus.add(ECU.CAM)
-    # if enable_dsu: self.fake_ecus.add(ECU.DSU)
-    # if enable_apg: self.fake_ecus.add(ECU.APGS)
 
     self.packer = CANPacker(dbc_name)
 
   def update(self, control, CS, frame):
     requestedSpeed = control.cruiseControl.speedOverride
     current_time_ms = _current_time_millis()
-    print(control.enabled, "SpeedErr: ", requestedSpeed * CV.MS_TO_MPH,  "actuator: ", control.actuators.gas, control.actuators.brake, control.actuators.steerAngle, CS.out.steeringAngle)
     can_sends = []
-    # test
-    # can_sends.append(create_steer_command(self.packer, -5, -7777, 2))
 
     # *** compute control surfaces ***
     CC_cancel_cmd = 0
@@ -159,22 +135,17 @@ class CarController:
     #   self.last_fault_frame = frame
 
     # Cut steering for 2s after fault
+    apply_hold_torque = 0
     if not control.enabled or (frame - self.last_fault_frame < 200):
-      apply_steer = 0
       apply_steer_req = 0
     else:
       apply_steer_req = 1
 
-    # self.steer_angle_enabled, self.ipas_reset_counter = \
-    #   ipas_state_transition(self.steer_angle_enabled, enabled, CS.out.ipas_active, self.ipas_reset_counter)
-    #print("{0} {1} {2}".format(self.steer_angle_enabled, self.ipas_reset_counter, CS.out.ipas_active))
-
     # steer angle
     if control.enabled:
-      apply_angle = control.actuators.steerAngle
       angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX_V)
-      apply_angle = clip(apply_angle, -angle_lim, angle_lim)
-
+      apply_angle = clip(control.actuators.steerAngle, -angle_lim, angle_lim)
+      
       # windup slower
       if self.last_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_angle):
         angle_rate_lim = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_V)
@@ -192,22 +163,6 @@ class CarController:
     self.last_angle = apply_angle
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
-
-
-    #*** control msgs ***
-    #print("steer {0} {1} {2} {3}".format(apply_steer, min_lim, max_lim, CS.out.steeringTorqueEps)
-
-      #if self.angle_control:
-      #  can_sends.append(create_steer_command(self.packer, 0., 0, frame))
-      #else:
-      #  can_sends.append(create_steer_command(self.packer, apply_steer, apply_steer_req, frame))
-
-
-
-
-
-
-
 
 
 
