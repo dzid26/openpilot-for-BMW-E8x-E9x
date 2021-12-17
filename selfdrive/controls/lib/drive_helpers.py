@@ -4,9 +4,9 @@ from selfdrive.config import Conversions as CV
 
 # kph
 V_CRUISE_MAX = 144
-V_CRUISE_MIN = 8
-V_CRUISE_DELTA = 8
-V_CRUISE_ENABLE_MIN = 40
+V_CRUISE_MIN = 28   #kph
+V_CRUISE_DELTA = 5
+V_CRUISE_ENABLE_MIN = 20 * CV.MPH_TO_KPH
 
 
 class MPC_COST_LAT:
@@ -74,9 +74,12 @@ def update_v_cruise(v_cruise_kph, buttonEvents, enabled):
 
 
 def initialize_v_cruise(v_ego, buttonEvents, v_cruise_last):
+  # BMW has dedicated button to resume to previous cruise speed
   for b in buttonEvents:
     # 250kph or above probably means we never had a set speed
-    if b.type == "accelCruise" and v_cruise_last < 250:
+    if b.type == "resumeCruise" and v_cruise_last < 250:
+      print("resume!!!!!!!")
       return v_cruise_last
-
+    else:
+      print("not resume!!!!!!")
   return int(round(clip(v_ego * CV.MS_TO_KPH, V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)))
