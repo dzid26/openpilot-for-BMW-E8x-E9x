@@ -213,6 +213,7 @@ class CarController:
                                                                  control.actuators.brake, speed_diff_req))
     else:
       target_angle_lim = CS.out.steeringAngle
+      can_sends.append(create_steer_command(int(False), 0., 0., frame)) 
       
       # if (frame % 100) == 0: #slow print when disabled
       #   print("SteerAngle {0} SteerSpeed {1}".format(CS.out.steeringAngle,

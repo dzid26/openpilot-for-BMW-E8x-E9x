@@ -1,12 +1,22 @@
 from selfdrive.car import dbc_dict
 
 # Steer torque limits
-class SteerLimitParams:
-  STEER_MAX = 1500
-  STEER_DELTA_UP = 10       # 1.5s time to peak torque
-  STEER_DELTA_DOWN = 25     # always lower than 45 otherwise the Rav4 faults (Prius seems ok with 50)
-  STEER_ERROR_MAX = 350     # max delta between torque cmd and torque motor
+class SteerLimitParams: #controls running @ 100hz
+  STEER_MAX = 9
+  STEER_DELTA_UP = 10 / 100       # 10Nm/s
+  STEER_DELTA_DOWN = 1000 / 100     # 10Nm/sample - no limit
+  STEER_ERROR_MAX = 999     # max delta between torque cmd and torque motor
 
+class SteerActuatorParams: # stepper parameters
+  MAX_STEERING_TQ = 8  # Nm
+  #Todo remvoe this if not used - since it is included in DBC factor
+  # ACTUATOR_RATIO = 25 / 12 * (13+212/289)  # big cog / small cog * planetary gearbox
+  # POSITION_SCALING = 256 / 1.8  # microsteps / base step angle [deg]
+  CENTERING_COEFF = 0.0005
+  ZERO_ANGLE_HOLD_TQ = 1 #carcontroller will interpolate between zero angle torque and where linear region start
+  STEER_LINEAR_REGION = 5 #deg start of linear region for small angles
+  STEER_TORQUE_OFFSET = 3  # add offset to due
+  STEER_BACKLASH = 1 #deg
 
 
 #car chimes: enumeration from dbc file. Chimes are for alerts and warnings

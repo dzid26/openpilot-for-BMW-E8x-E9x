@@ -15,9 +15,7 @@ class CarState(CarStateBase):
     self.angle_offset = 0.
     self.steer_warning = False
     self.low_speed_lockout = False
-    self.steer_angle_delta_cmd = 0.
-    self.steer_angle_cmd_motor= 0.
-    self.steer_angle_cmd_motor_prev = 0.
+    self.steer_angle_delta = 0.
     self.gas_kickdown = False
 
     self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"
@@ -146,6 +144,8 @@ class CarState(CarStateBase):
 
     ret.genericToggle = self.sportMode
 
+    ret.steeringTorqueEps =  cp_aux.vl['ControlStatus1']['TorqueActual']
+    self.steer_angle_delta = cp_aux.vl['ControlStatus1']['PositionError']
 
     self.prev_gasPressed = ret.gasPressed
     return ret
@@ -232,4 +232,17 @@ class CarState(CarStateBase):
 
     return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 1)  # 1: F-CAN,
 
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 1)  # 1: F-CAN, 2: PT-CAN
+  @staticmethod
+  def get_actuator_can_parser(CP):
+    signals = [  # signal name, message name, default value
+      ("TorqueActual", "ControlStatus1", 0),
+      ("TorqueCloseLoopActual", "ControlStatus1", 0),
+      ("SpeedActual", "ControlStatus1", 0),
+      ("PositionError", "ControlStatus1", 0),
+      ("PositionRaw", "SystemStatus2", 0),
+    ]
+    checks = [ # refresh frequency Hz
+    # ("ControlStatus1", 100),  #TODO enable this later - after capturing test reference log with the actuator installed
+    # ("SystemStatus2", 100),
+    ] 
+    return CANParser('OpenActuator', signals, checks, 2)  # 2: Actuator-CAN,

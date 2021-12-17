@@ -36,6 +36,7 @@ class CarInterface(CarInterfaceBase):
     super().__init__(CP, CarController, CarState)
     
     self.cp_F = self.CS.get_F_can_parser(CP)
+    self.cp_aux = self.CS.get_actuator_can_parser(CP)
 
     self.enabled = False
     self.gas_pressed_prev3 = False
@@ -123,9 +124,10 @@ class CarInterface(CarInterfaceBase):
     # ******************* do can recv *******************
     self.cp.update_strings(can_strings)
     self.cp_F.update_strings(can_strings)
+    self.cp_aux.update_strings(can_strings)
 
-    ret = self.CS.update(self.cp, self.cp_F)
-    ret.canValid = self.cp.can_valid and self.cp_F.can_valid
+    ret = self.CS.update(self.cp, self.cp_F, self.cp_aux)
+    ret.canValid = self.cp.can_valid and self.cp_F.can_valid and self.cp_aux.can_valid
 
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngle * CV.DEG_TO_RAD, ret.vEgo)
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
