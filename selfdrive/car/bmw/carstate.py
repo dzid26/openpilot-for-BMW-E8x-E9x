@@ -206,10 +206,10 @@ class CarState(CarStateBase):
       signals.append(("CruiseControlSetpointSpeed", "CruiseControlStatus", 0))
       checks.append(("CruiseControlStatus", 33))
 
-    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 2)  # 1: F-CAN, 2: PT-CAN
+    return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, 0)  # 0: PT-CAN
 
   @staticmethod
-  def get_cam_can_parser(CP):  # 540 vehicle option could get away with just PT_CAN, but vo544 requires sending, and thus receiving, cruise commands on F-CAN. F-can works for both options.
+  def get_F_can_parser(CP):  # 540 vehicle option could get away with just PT_CAN, but vo544 requires sending, and thus receiving, cruise commands on F-CAN. F-can works for both options.
     signals = [  # signal name, message name, default value
       ("SteeringPosition", "SteeringWheelAngle_DSC", 0), #this is slightly faster than PT-CAN equivalent
       # some F-can messages, like CruiseControl, are mirrored on PT-CAN

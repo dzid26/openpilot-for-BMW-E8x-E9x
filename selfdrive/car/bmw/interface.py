@@ -34,6 +34,8 @@ def detect_stepper_override(steerCmd, steerAct, vEgo, centering_ceoff, SteerFric
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
+    
+    self.cp_F = self.CS.get_F_can_parser(CP)
 
     self.enabled = False
     self.gas_pressed_prev3 = False
@@ -120,11 +122,10 @@ class CarInterface(CarInterfaceBase):
   def update(self, c, can_strings):
     # ******************* do can recv *******************
     self.cp.update_strings(can_strings)
-    self.cp_cam.update_strings(can_strings)
+    self.cp_F.update_strings(can_strings)
 
-    ret = self.CS.update(self.cp, self.cp_cam)
-
-    ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
+    ret = self.CS.update(self.cp, self.cp_F)
+    ret.canValid = self.cp.can_valid and self.cp_F.can_valid
 
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngle * CV.DEG_TO_RAD, ret.vEgo)
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
