@@ -150,7 +150,7 @@ def handle_fan_uno(max_cpu_temp, bat_temp, fan_speed, ignition):
 
 def thermald_thread():
   # prevent LEECO from undervoltage
-  BATT_PERC_OFF = 10 if LEON else 3
+  BATT_PERC_OFF = 10 if LEON else 50
 
   health_timeout = int(1000 * 2.5 * DT_TRML)  # 2.5x the expected health frequency
 
