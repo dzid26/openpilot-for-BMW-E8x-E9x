@@ -88,6 +88,13 @@ selfdrive/car/interfaces.py
 selfdrive/car/vin.py
 selfdrive/car/fw_versions.py
 selfdrive/car/isotp_parallel_query.py
+selfdrive/car/bmw/__init__.py
+selfdrive/car/bmw/carstate.py
+selfdrive/car/bmw/interface.py
+selfdrive/car/bmw/radar_interface.py
+selfdrive/car/bmw/values.py
+selfdrive/car/bmw/carcontroller.py
+selfdrive/car/bmw/bmwcan.py
 selfdrive/car/chrysler/__init__.py
 selfdrive/car/chrysler/carstate.py
 selfdrive/car/chrysler/interface.py

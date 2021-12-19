@@ -12,17 +12,17 @@ echo $PPID > /dev/cpuset/app/tasks
 add_subtree() {
   echo "[-] adding $2 subtree T=$SECONDS"
   if [ -d "$2" ]; then
-    if git subtree pull --prefix "$2" https://github.com/commaai/"$1".git "$3" --squash -m "Merge $2 subtree"; then
+    if git subtree pull --prefix "$2" "$1".git "$3" --squash -m "Merge $2 subtree"; then
       echo "git subtree pull succeeds"
     else
       echo "git subtree pull failed, fixing"
       git merge --abort || true
-      git rm -r $2
+      git rm -r "$2"
       git commit -m "Remove old $2 subtree"
-      git subtree add --prefix "$2" https://github.com/commaai/"$1".git "$3" --squash
+      git subtree add --prefix "$2" "$1".git "$3" --squash
     fi
   else
-    git subtree add --prefix "$2" https://github.com/commaai/"$1".git "$3" --squash
+    git subtree add --prefix "$2" "$1".git "$3" --squash
   fi
 }
 
@@ -31,10 +31,10 @@ TARGET_DIR=/data/openpilot
 
 ln -sf $TARGET_DIR /data/pythonpath
 
-export GIT_COMMITTER_NAME="Vehicle Researcher"
-export GIT_COMMITTER_EMAIL="user@comma.ai"
-export GIT_AUTHOR_NAME="Vehicle Researcher"
-export GIT_AUTHOR_EMAIL="user@comma.ai"
+export GIT_COMMITTER_NAME="BMW Researcher"
+export GIT_COMMITTER_EMAIL="dzidmail@gmail.com"
+export GIT_AUTHOR_NAME="dzid26"
+export GIT_AUTHOR_EMAIL="dzidmail@gmail.com"
 export GIT_SSH_COMMAND="ssh -i /tmp/deploy_key"
 
 echo "[-] Setting up repo T=$SECONDS"
@@ -42,7 +42,7 @@ if [ ! -d "$TARGET_DIR" ]; then
     mkdir -p $TARGET_DIR
     cd $TARGET_DIR
     git init
-    git remote add origin git@github.com:commaai/openpilot.git
+    git remote add origin git@github.com:dzid26/openpilot-for-BMW-E8x-E9x.git
 fi
 
 
@@ -55,17 +55,17 @@ echo "[-] bringing master-ci and devel in sync T=$SECONDS"
 git fetch origin master-ci
 git fetch origin devel
 
-git checkout --track origin/master-ci || true
+git checkout --track --force origin/master-ci || true
 git reset --hard master-ci
 git checkout master-ci
 git reset --hard origin/devel
 git clean -xdf
 
 # subtrees to make updates more reliable. updating them needs a clean tree
-add_subtree "cereal" "cereal" master
-add_subtree "panda" "panda" master
-add_subtree "opendbc" "opendbc" master
-add_subtree "openpilot-pyextra" "pyextra" master
+add_subtree "https://github.com/dzid26/cereal_bmw" "cereal" master
+add_subtree "https://github.com/dzid26/panda_bmw" "panda" master
+add_subtree "https://github.com/dzid26/opendbc-BMW-E8x-E9x" "opendbc" master
+add_subtree "https://github.com/commaai/openpilot-pyextra" "pyextra" master
 
 # leave .git alone
 echo "[-] erasing old openpilot T=$SECONDS"
