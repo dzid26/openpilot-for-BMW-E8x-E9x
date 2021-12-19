@@ -5,7 +5,7 @@ from selfdrive.config import Conversions as CV
 # kph
 V_CRUISE_MAX = 144
 V_CRUISE_MIN = 28   #kph
-V_CRUISE_DELTA = 8
+V_CRUISE_DELTA = 5
 V_CRUISE_ENABLE_MIN = 20 * CV.MPH_TO_KPH
 
 
