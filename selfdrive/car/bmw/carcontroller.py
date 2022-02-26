@@ -193,10 +193,10 @@ class CarController:
       target_angle_delta = CS.out.steeringAngle - target_angle_lim 
       angle_desired_rate = clip(target_angle_delta, -angle_max_rate, angle_max_rate) #apply max allowed rate such that the target is not overshot within a sample
       
-      self.steer_rate_limited = target_angle_delta != angle_desired_rate #desired rate only drives stepper (inertial) holding torque in this iteration. Rate is limited independently in Trinamic controller
+      self.steer_rate_limited = target_angle_delta != angle_desired_rate #todo #desired rate only drives stepper (inertial) holding torque in this iteration. Rate is limited independently in Trinamic controller
       
       # steer torque
-      I_steering = 0.05 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
+      I_steering = 0.005 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
       inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
       # add friciton compensation feed-forward
