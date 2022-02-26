@@ -242,7 +242,7 @@ class CarState(CarStateBase):
       ("PositionRaw", "SystemStatus2", 0),
     ]
     checks = [ # refresh frequency Hz
-    # ("ControlStatus1", 100),  #TODO enable this later - after capturing test reference log with the actuator installed
-    # ("SystemStatus2", 100),
+    ("ControlStatus1", 100),
+    ("SystemStatus2", 100),
     ] 
     return CANParser('OpenActuator', signals, checks, 2)  # 2: Actuator-CAN,
