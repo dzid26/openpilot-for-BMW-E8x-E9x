@@ -23,7 +23,7 @@ ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 # Steer angle limits
 ANGLE_MAX_BP = [5., 15., 30]  #m/s
 ANGLE_MAX = [200., 20., 10.] #deg
-ANGLE_RATE_BP = [0., 5., 15.]
+ANGLE_RATE_BP = [0., 5., 15.]      # m/s
 ANGLE_RATE_WINDUP = [500., 80., 15.]     #deg/s windup rate limit
 ANGLE_RATE_UNWIND = [500., 350., 40.]  #deg/s unwind rate limit
 
