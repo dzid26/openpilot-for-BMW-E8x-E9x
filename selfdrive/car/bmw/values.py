@@ -10,9 +10,6 @@ class SteerLimitParams: #controls running @ 100hz
 class SteerActuatorParams: # stepper parameters
   MAX_STEERING_TQ = 8  # Nm
   CENTERING_COEFF = 0.0003
-  ZERO_ANGLE_HOLD_TQ = 1 #carcontroller will interpolate between zero angle torque and where linear region start
-  STEER_LINEAR_REGION = 5 #deg start of linear region for small angles
-  STEER_TORQUE_OFFSET = 0  # add offset to due
   STEER_BACKLASH = 1 #deg
 
 

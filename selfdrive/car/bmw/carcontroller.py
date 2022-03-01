@@ -27,12 +27,6 @@ ANGLE_RATE_BP = [0., 5., 15.]      # m/s
 ANGLE_RATE_WINDUP = [500., 80., 15.]     #deg/s windup rate limit
 ANGLE_RATE_UNWIND = [500., 350., 40.]  #deg/s unwind rate limit
 
-def calc_steering_torque_hold(angle, vEgo, steerActuatorParams):
-  angle_sign = 1 if angle > 0 else -1
-  speed_dep_linear_curve = SteerActuatorParams.STEER_TORQUE_OFFSET + angle_sign * max(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) *vEgo ** 2 * steerActuatorParams.CENTERING_COEFF
-  k = min(abs(angle), steerActuatorParams.STEER_LINEAR_REGION) / steerActuatorParams.STEER_LINEAR_REGION
-  return -((1-k)* steerActuatorParams.ZERO_ANGLE_HOLD_TQ * angle_sign + k*speed_dep_linear_curve) #interpolate between zero hold torque and linear region starting point at a given vehicle speed
-
 def _current_time_millis():
   return int(round(time.time() * 1000))
 
@@ -199,8 +193,8 @@ class CarController:
       I_steering = 0.005 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
       inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
-      # add friciton compensation feed-forward
-      steer_tq = calc_steering_torque_hold(CS.out.vEgo, target_angle_lim, SteerActuatorParams) + inertia_tq
+      # add feed-forward and inertia compensation
+      steer_tq = control.actuators.steer + inertia_tq
 
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)

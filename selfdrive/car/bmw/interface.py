@@ -54,17 +54,17 @@ class CarInterface(CarInterfaceBase):
 
     ret.carName = "bmw"
     ret.safetyModel = car.CarParams.SafetyModel.bmw
-    ret.steerControlType = car.CarParams.SteerControlType.angle
+    ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.15
-    ret.steerLimitTimer = 5
+    ret.steerLimitTimer = 0.4
 
 
     ret.lateralTuning.init('pid')
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[1], [0.]]
-    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.01], [0.]]
+    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.0], [0.]]
     ret.lateralTuning.pid.kf = SteerActuatorParams.CENTERING_COEFF
     ret.steerMaxBP = [0.]
-    ret.steerMaxV = [5.]
+    ret.steerMaxV = [SteerActuatorParams.MAX_STEERING_TQ]
 
     if candidate in [CAR.E82_DCC, CAR.E82]:
       # stop_and_go = False
@@ -202,9 +202,6 @@ class CarInterface(CarInterfaceBase):
     #   events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
     steeringActuatorEnabled = self.enabled and not self.CS.sportMode
-    # wait for steering actuator to be enabled for two samples to get stepper delta calculated correctly
-    # if steeringActuatorEnabled and self.steeringActuatorEnabled_prev and detect_stepper_override(steerCmdLimited_prev, ret.steeringAngle, ret.vEgo, self.CP.lateralTuning.pid.kf, SteerActuatorParams.STEER_TORQUE_OFFSET):
-    #    events.append(create_event('steerUnavailable', [ET.IMMEDIATE_DISABLE]))  #TODO clean up this event - detect driver overriding controls
     self.steeringActuatorEnabled_prev = steeringActuatorEnabled
 
     # update previous brake/gas pressed
