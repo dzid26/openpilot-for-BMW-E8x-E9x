@@ -9,7 +9,11 @@ from selfdrive.config import Conversions as CV
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 import time
 
-SAMPLING_FREQ = 100; #Hz
+def calc_steering_torque_hold(angle, vEgo):
+  
+  return SteerActuatorParams.CENTERING_COEFF * angle #interpolate between zero hold torque and linear region starting point at a given vehicle speed
+
+SAMPLING_FREQ = 100 #Hz
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
@@ -194,7 +198,7 @@ class CarController:
       inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
       # add feed-forward and inertia compensation
-      steer_tq = control.actuators.steer + inertia_tq
+      steer_tq = calc_steering_torque_hold(CS.out.vEgo, target_angle_lim) + inertia_tq
 
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)

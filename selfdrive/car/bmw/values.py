@@ -9,7 +9,7 @@ class SteerLimitParams: #controls running @ 100hz
 
 class SteerActuatorParams: # stepper parameters
   MAX_STEERING_TQ = 8  # Nm
-  CENTERING_COEFF = 0.0003
+  CENTERING_COEFF = 0.3
   STEER_BACKLASH = 1 #deg
 
 
