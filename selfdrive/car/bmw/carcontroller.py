@@ -179,17 +179,17 @@ class CarController:
       
       # windup slower #todo implement real (speed) rate limiter
       if (self.last_target_angle_lim * target_angle_lim) > 0. and abs(target_angle_lim) > abs(self.last_target_angle_lim): #todo revise last_angle
-        angle_delta_lim = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_WINDUP) 
+        angle_rate_max = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_WINDUP) 
       else:
-        angle_delta_lim = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_UNWIND)
-      angle_max_rate = angle_delta_lim / SAMPLING_FREQ
+        angle_rate_max = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_UNWIND)
       
       # steer angle - don't allow too large delta
       MAX_SEC_BEHIND = 1 #seconds behind target. Target deltas behind more than 1s will be rejected by bmw_safety
-      target_angle_lim = clip(target_angle_lim, self.last_target_angle_lim - angle_delta_lim*MAX_SEC_BEHIND, self.last_target_angle_lim + angle_delta_lim*MAX_SEC_BEHIND)
+      target_angle_lim = clip(target_angle_lim, self.last_target_angle_lim - angle_rate_max*MAX_SEC_BEHIND, self.last_target_angle_lim + angle_rate_max*MAX_SEC_BEHIND)
       
       target_angle_delta = CS.out.steeringAngle - target_angle_lim 
-      angle_desired_rate = clip(target_angle_delta, -angle_max_rate, angle_max_rate) #apply max allowed rate such that the target is not overshot within a sample
+      angle_deltastep_max = angle_rate_max / SAMPLING_FREQ
+      angle_desired_rate = clip(target_angle_delta, -angle_deltastep_max, angle_deltastep_max) #apply max allowed rate such that the target is not overshot within a sample
       
       self.steer_rate_limited = target_angle_delta != angle_desired_rate #todo #desired rate only drives stepper (inertial) holding torque in this iteration. Rate is limited independently in Trinamic controller
       
