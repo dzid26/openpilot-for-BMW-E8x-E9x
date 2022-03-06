@@ -124,6 +124,25 @@ class Route:
           for seg_f in os.listdir(os.path.join(fullpath, seg_num)):
             segment_files[segment_name].append((os.path.join(fullpath, seg_num, seg_f), seg_f))
 
+    #if nothing found, try subdirectories with retropilot-server realdata structure
+    if not segment_files:
+      fullpaths = [os.path.split(r)[-2] for r, d, f in os.walk(data_dir) if not d] #get only deep directories
+
+      for fullpath in fullpaths:
+        f = os.path.split(fullpath)[-1]
+        local_match = re.match(RE.LOCAL_SEGMENT, f+'--0')
+
+        if local_match and os.path.isdir(fullpath):
+          segment_name = local_match.group()
+          if segment_name.startswith(self.name.time_str):
+            for seg_num in os.listdir(fullpath):
+              if not os.path.isdir(os.path.join(fullpath, seg_num)) or not seg_num.isdigit():
+                continue
+              segment_name = f'{self.name.time_str}--{seg_num}'
+              for seg_f in os.listdir(os.path.join(fullpath, seg_num)):
+                segment_files[segment_name].append((os.path.join(fullpath, seg_num, seg_f), seg_f))
+    
+    
     segments = []
     for segment, files in segment_files.items():
 
