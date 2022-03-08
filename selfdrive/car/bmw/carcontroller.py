@@ -187,7 +187,7 @@ class CarController:
       MAX_SEC_BEHIND = 1 #seconds behind target. Target deltas behind more than 1s will be rejected by bmw_safety
       target_angle_lim = clip(target_angle_lim, self.last_target_angle_lim - angle_rate_max*MAX_SEC_BEHIND, self.last_target_angle_lim + angle_rate_max*MAX_SEC_BEHIND)
       
-      target_angle_delta = CS.out.steeringAngle - target_angle_lim 
+      target_angle_delta =  target_angle_lim - CS.out.steeringAngle
       angle_deltastep_max = angle_rate_max / SAMPLING_FREQ
       angle_desired_rate = clip(target_angle_delta, -angle_deltastep_max, angle_deltastep_max) #apply max allowed rate such that the target is not overshot within a sample
       
@@ -198,7 +198,7 @@ class CarController:
       inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
       # add feed-forward and inertia compensation
-      steer_tq = calc_steering_torque_hold(CS.out.vEgo, target_angle_lim) + inertia_tq
+      steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + inertia_tq
 
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
