@@ -68,6 +68,7 @@ class CarController:
     self.controls_allowed = True
     self.last_steer = 0
     self.last_target_angle_lim = 0
+    self.last_angle_desired_rate = 0
     self.accel_steady = 0.
     self.alert_active = False
     self.last_standstill = False
@@ -177,25 +178,25 @@ class CarController:
       angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX)
       target_angle_lim = clip(control.actuators.steerAngle, -angle_lim, angle_lim)
       
-      # windup slower #todo implement real (speed) rate limiter
+      # windup slower
       if (self.last_target_angle_lim * target_angle_lim) > 0. and abs(target_angle_lim) > abs(self.last_target_angle_lim): #todo revise last_angle
         angle_rate_max = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_WINDUP) 
       else:
         angle_rate_max = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_UNWIND)
       
       # steer angle - don't allow too large delta
-      MAX_SEC_BEHIND = 1 #seconds behind target. Target deltas behind more than 1s will be rejected by bmw_safety
+      MAX_SEC_BEHIND = 1 #seconds behind target. Target deltas behind more than 1s will be rejected by bmw_safety #todo implement real (speed) rate limiter?? check with panda. Replace MAX_SEC_BEHIND with a Hz?
       target_angle_lim = clip(target_angle_lim, self.last_target_angle_lim - angle_rate_max*MAX_SEC_BEHIND, self.last_target_angle_lim + angle_rate_max*MAX_SEC_BEHIND)
       
       target_angle_delta =  target_angle_lim - CS.out.steeringAngle
       angle_deltastep_max = angle_rate_max / SAMPLING_FREQ
       angle_desired_rate = clip(target_angle_delta, -angle_deltastep_max, angle_deltastep_max) #apply max allowed rate such that the target is not overshot within a sample
       
-      self.steer_rate_limited = target_angle_delta != angle_desired_rate #todo #desired rate only drives stepper (inertial) holding torque in this iteration. Rate is limited independently in Trinamic controller
+      self.steer_rate_limited = target_angle_delta != angle_desired_rate
       
       # steer torque
       I_steering = 0.005 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
-      inertia_tq = I_steering * ((angle_desired_rate * SAMPLING_FREQ - CS.out.steeringRate ) * SAMPLING_FREQ) * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
+      inertia_tq = I_steering * (angle_desired_rate - self.last_angle_desired_rate) * SAMPLING_FREQ * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
       # add feed-forward and inertia compensation
       steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + inertia_tq
@@ -211,6 +212,7 @@ class CarController:
                                                                  control.actuators.brake, speed_diff_req))
     else:
       target_angle_lim = CS.out.steeringAngle
+      angle_desired_rate = 0
       can_sends.append(create_steer_command(int(False), 0., 0., frame)) 
       
       # if (frame % 100) == 0: #slow print when disabled
@@ -220,6 +222,7 @@ class CarController:
 
     self.last_steer = apply_hold_torque
     self.last_target_angle_lim = target_angle_lim
+    self.last_angle_desired_rate = angle_desired_rate
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
 
