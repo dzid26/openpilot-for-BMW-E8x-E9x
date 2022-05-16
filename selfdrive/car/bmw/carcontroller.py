@@ -68,7 +68,7 @@ class CarController:
     self.controls_allowed = True
     self.last_steer = 0
     self.last_target_angle_lim = 0
-    self.last_angle_desired_rate = 0
+    self.last_angle_step = 0
     self.accel_steady = 0.
     self.alert_active = False
     self.last_standstill = False
@@ -189,14 +189,14 @@ class CarController:
       target_angle_lim = clip(target_angle_lim, self.last_target_angle_lim - angle_rate_max*MAX_SEC_BEHIND, self.last_target_angle_lim + angle_rate_max*MAX_SEC_BEHIND)
       
       target_angle_delta =  target_angle_lim - CS.out.steeringAngle
-      angle_deltastep_max = angle_rate_max / SAMPLING_FREQ
-      angle_desired_rate = clip(target_angle_delta, -angle_deltastep_max, angle_deltastep_max) #apply max allowed rate such that the target is not overshot within a sample
-      
-      self.steer_rate_limited = target_angle_delta != angle_desired_rate
+      angle_step_max = angle_rate_max / SAMPLING_FREQ  #max angle step per single sample
+      angle_step = clip(target_angle_delta, -angle_step_max, angle_step_max) #apply angle step
+      self.steer_rate_limited = target_angle_delta != angle_step #advertise steer beeing rate limited
       
       # steer torque
-      I_steering = 0.005 #estimated moment of inertia (inertia of a ring = I=mR^2 = 2kg * .15^2 = 0.045kgm2)
-      inertia_tq = I_steering * (angle_desired_rate - self.last_angle_desired_rate) * SAMPLING_FREQ * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
+      I_steering = 10 #estimated moment of inertia
+      steer_acc = (angle_step - self.last_angle_step) * SAMPLING_FREQ  #desired acceleration
+      inertia_tq = I_steering * steer_acc * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
       
       # add feed-forward and inertia compensation
       steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + inertia_tq
@@ -212,7 +212,7 @@ class CarController:
                                                                  control.actuators.brake, speed_diff_req))
     else:
       target_angle_lim = CS.out.steeringAngle
-      angle_desired_rate = 0
+      angle_step = 0
       can_sends.append(create_steer_command(int(False), 0., 0., frame)) 
       
       # if (frame % 100) == 0: #slow print when disabled
@@ -222,7 +222,7 @@ class CarController:
 
     self.last_steer = apply_hold_torque
     self.last_target_angle_lim = target_angle_lim
-    self.last_angle_desired_rate = angle_desired_rate
+    self.last_angle_step = angle_step
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
 
