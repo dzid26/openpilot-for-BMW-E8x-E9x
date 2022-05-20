@@ -68,7 +68,6 @@ class CarController:
     self.controls_allowed = True
     self.last_steer = 0
     self.last_target_angle_lim = 0
-    self.last_angle_step = 0
     self.accel_steady = 0.
     self.alert_active = False
     self.last_standstill = False
@@ -79,6 +78,8 @@ class CarController:
     self.cruise_speed_prev = 0
     self.steer_angle_enabled = False
     self.last_fault_frame = -200
+    self.planner_cnt = 0
+    self.inertia_tq = 0.
 
     #don't rename
     self.steer_rate_limited = False 
@@ -195,11 +196,19 @@ class CarController:
       
       # steer torque
       I_steering = 10 #estimated moment of inertia
-      steer_acc = (angle_step - self.last_angle_step) * SAMPLING_FREQ  #desired acceleration
-      inertia_tq = I_steering * steer_acc * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
+      
+      PLANNER_SAMPLING_SUBRATE = 6 #planner updates target angle every 4 or 6 samples
+      if target_angle_lim != self.last_target_angle_lim or self.planner_cnt >= PLANNER_SAMPLING_SUBRATE-1:
+        steer_acc = (target_angle_lim - self.last_target_angle_lim) * SAMPLING_FREQ  #desired acceleration
+        remaining_steer_torque = self.inertia_tq * (PLANNER_SAMPLING_SUBRATE - self.planner_cnt -1) #remaining torque to be applied if target_angle_lim was updated earlier than PLANNER_SAMPLING_SUBRATE
+        self.inertia_tq = I_steering * steer_acc / PLANNER_SAMPLING_SUBRATE * CV.DEG_TO_RAD  #kg*m^2 * rad/s^2 = N*m (torque)
+        self.inertia_tq += remaining_steer_torque / PLANNER_SAMPLING_SUBRATE
+        self.planner_cnt = 0
+      else:
+        self.planner_cnt += 1
       
       # add feed-forward and inertia compensation
-      steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + inertia_tq
+      steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + self.inertia_tq
 
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
@@ -207,8 +216,8 @@ class CarController:
       can_sends.append(create_steer_command(int(True), target_angle_delta, steer_tq, frame))
       # *** control msgs ***
       if (frame % 10) == 0: #slow print
-        print("SteerAngleErr {0} Inertia  {1} Brake {2}, SpeedDiff {3}".format(control.actuators.steerAngle - CS.out.steeringAngle,
-                                                                 inertia_tq,
+        print("SteerAngle {0} Inertia  {1} Brake {2}, frame {3}".format(target_angle_lim,
+                                                                 self.inertia_tq,
                                                                  control.actuators.brake, speed_diff_req))
     else:
       target_angle_lim = CS.out.steeringAngle
@@ -222,7 +231,6 @@ class CarController:
 
     self.last_steer = apply_hold_torque
     self.last_target_angle_lim = target_angle_lim
-    self.last_angle_step = angle_step
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
 
