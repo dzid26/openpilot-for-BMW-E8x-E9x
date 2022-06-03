@@ -54,14 +54,14 @@ class CarInterface(CarInterfaceBase):
 
     ret.carName = "bmw"
     ret.safetyModel = car.CarParams.SafetyModel.bmw
-    ret.steerControlType = car.CarParams.SteerControlType.torque
+    ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.15
     ret.steerLimitTimer = 0.4
 
 
     ret.lateralTuning.init('pid')
-    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[1], [0.]]
-    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.0], [0.]]
+    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0], [0.]]
+    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.5], [5.2]]
     ret.lateralTuning.pid.kf = SteerActuatorParams.CENTERING_COEFF
     ret.steerMaxBP = [0.]
     ret.steerMaxV = [SteerActuatorParams.MAX_STEERING_TQ]

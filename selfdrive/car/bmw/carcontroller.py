@@ -209,7 +209,7 @@ class CarController:
       
       # add feed-forward and inertia compensation
       steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + self.inertia_tq
-
+      steer_tq = control.actuators.steer + self.inertia_tq
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
       

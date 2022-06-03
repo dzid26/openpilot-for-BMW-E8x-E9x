@@ -12,7 +12,7 @@ def create_steer_command(mode, steer_delta, steer_tq, frame):
         "ControlMode": mode,
         "PositionChange": steer_delta,
         "TorqueFeedforward": steer_tq,
-        "TorqueCloseloopMax": 4., #TODO: generate signals for this
+        "TorqueCloseloopMax": 0., #TODO: generate signals for this
     }
     dat = packer.make_can_msg("ControlCmd1", 0, values)[2]
     # values["CRC8_CMD1"] = openactuator_checksum(dat[:7])
