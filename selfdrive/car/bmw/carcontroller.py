@@ -65,7 +65,7 @@ class CarController:
   def __init__(self, dbc_name, CP, VM):
     self.braking = False
     # redundant safety check with the board
-    self.controls_allowed = True
+    self.last_controls_enabled = False
     self.last_steer = 0
     self.last_target_angle_lim = 0
     self.accel_steady = 0.
@@ -168,17 +168,17 @@ class CarController:
     #   self.last_fault_frame = frame
 
     # Cut steering for 2s after fault
-    apply_hold_torque = 0
+    steer_tq = 0
     if not control.enabled or (frame - self.last_fault_frame < 200):
       apply_steer_req = 0
     else:
       apply_steer_req = 1
 
     # steer angle
-    if control.enabled:
-      angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX)
-      target_angle_lim = clip(control.actuators.steerAngle, -angle_lim, angle_lim)
+    angle_lim = interp(CS.out.vEgo, ANGLE_MAX_BP, ANGLE_MAX)
+    target_angle_lim = clip(control.actuators.steerAngle, -angle_lim, angle_lim)
       
+    if control.enabled:
       # windup slower
       if (self.last_target_angle_lim * target_angle_lim) > 0. and abs(target_angle_lim) > abs(self.last_target_angle_lim): #todo revise last_angle
         angle_rate_max = interp(CS.out.vEgo, ANGLE_RATE_BP, ANGLE_RATE_WINDUP) 
@@ -213,27 +213,27 @@ class CarController:
       # explicitly clip torque before sending on CAN
       steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
       
-      can_sends.append(create_steer_command(int(True), target_angle_delta, steer_tq, frame))
+      can_sends.append(create_steer_command(apply_steer_req, target_angle_delta, steer_tq, frame))
       # *** control msgs ***
       if (frame % 10) == 0: #slow print
         print("SteerAngle {0} Inertia  {1} Brake {2}, frame {3}".format(target_angle_lim,
                                                                  self.inertia_tq,
                                                                  control.actuators.brake, speed_diff_req))
-    else:
-      target_angle_lim = CS.out.steeringAngle
-      angle_step = 0
-      can_sends.append(create_steer_command(int(False), 0., 0., frame)) 
+    elif not control.enabled and self.last_controls_enabled: #falling edge - send cancel CAN message
+      target_angle_delta = 0
+      steer_tq = 0
+      can_sends.append(create_steer_command(apply_steer_req, target_angle_delta, steer_tq, frame)) 
       
       # if (frame % 100) == 0: #slow print when disabled
       #   print("SteerAngle {0} SteerSpeed {1}".format(CS.out.steeringAngle,
                                                                 #  CS.out.steeringRate))
 
 
-    self.last_steer = apply_hold_torque
+    self.last_steer = steer_tq
     self.last_target_angle_lim = target_angle_lim
     # self.last_accel = apply_accel
     self.last_standstill = CS.out.standstill
-
+    self.last_controls_enabled = control.enabled
 
 
 
