@@ -3,7 +3,7 @@ from cereal import car
 from common.numpy_fast import clip, interp
 from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import EventTypes as ET, create_event
-from selfdrive.car.bmw.values import CM, BP, AH, CAR, SteerLimitParams, SteerActuatorParams
+from selfdrive.car.bmw.values import CM, BP, AH, CAR, SteerLimitParams
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, is_ecu_disconnected, gen_empty_fingerprint
 from selfdrive.swaglog import cloudlog
 from selfdrive.car.interfaces import CarInterfaceBase
@@ -62,9 +62,9 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.init('pid')
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[5.5, 30.], [5.5, 30.]]
     ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.0, 0.0], [1, 5]]
-    ret.lateralTuning.pid.kf = SteerActuatorParams.CENTERING_COEFF
+    ret.lateralTuning.pid.kf = 0
     ret.steerMaxBP = [0.]
-    ret.steerMaxV = [SteerActuatorParams.MAX_STEERING_TQ]
+    ret.steerMaxV = [SteerLimitParams.MAX_STEERING_TQ]
 
     if candidate in [CAR.E82_DCC, CAR.E82]:
       # stop_and_go = False

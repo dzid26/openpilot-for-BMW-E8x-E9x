@@ -2,7 +2,7 @@ from cereal import car
 from common.numpy_fast import clip, interp
 from selfdrive.car import apply_toyota_steer_torque_limits, create_gas_command, make_can_msg
 from selfdrive.car.bmw.bmwcan import create_steer_command, create_accel_command
-from selfdrive.car.bmw.values import CAR, SteerActuatorParams, SteerLimitParams
+from selfdrive.car.bmw.values import CAR, SteerLimitParams
 from opendbc.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
 
@@ -10,8 +10,9 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 import time
 
 def calc_steering_torque_hold(angle, vEgo):
-  
-  return SteerActuatorParams.CENTERING_COEFF * angle #interpolate between zero hold torque and linear region starting point at a given vehicle speed
+  hold_BP = [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0]
+  hold_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0]
+  return interp(angle, hold_BP, hold_V) #todo substract angle offset
 
 SAMPLING_FREQ = 100 #Hz
 
@@ -208,10 +209,10 @@ class CarController:
         self.planner_cnt += 1
       
       # add feed-forward and inertia compensation
-      steer_tq = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo) + self.inertia_tq
-      steer_tq = control.actuators.steer + self.inertia_tq
+      feedforward = calc_steering_torque_hold(target_angle_lim, CS.out.vEgo)
+      steer_tq = feedforward + control.actuators.steer + self.inertia_tq
       # explicitly clip torque before sending on CAN
-      steer_tq = clip(steer_tq, -SteerActuatorParams.MAX_STEERING_TQ, SteerActuatorParams.MAX_STEERING_TQ)
+      steer_tq = clip(steer_tq, -SteerLimitParams.MAX_STEERING_TQ, SteerLimitParams.MAX_STEERING_TQ)
       
       can_sends.append(create_steer_command(apply_steer_req, target_angle_delta, steer_tq, frame))
       # *** control msgs ***

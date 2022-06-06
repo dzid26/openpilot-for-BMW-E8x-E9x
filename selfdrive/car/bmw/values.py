@@ -2,14 +2,12 @@ from selfdrive.car import dbc_dict
 
 # Steer torque limits
 class SteerLimitParams: #controls running @ 100hz
-  STEER_MAX = 9
+  MAX_STEERING_TQ = 12  # Nm
   STEER_DELTA_UP = 10 / 100       # 10Nm/s
   STEER_DELTA_DOWN = 1000 / 100     # 10Nm/sample - no limit
   STEER_ERROR_MAX = 999     # max delta between torque cmd and torque motor
 
 class SteerActuatorParams: # stepper parameters
-  MAX_STEERING_TQ = 8  # Nm
-  CENTERING_COEFF = 0.3
   STEER_BACKLASH = 1 #deg
 
 
