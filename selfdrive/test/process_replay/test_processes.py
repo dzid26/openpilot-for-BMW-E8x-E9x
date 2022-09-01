@@ -14,7 +14,7 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
-  ("BMW", "/home/dzid_/winhome/Downloads/OP_logs/706e691c01496bd3_2022-02-25--12-52-41--3--rlog.bz2"),
+  ("BMW", os.path.dirname(os.path.abspath(__file__)) + "/ref_log/2022-08-31--23-27-00--1--rlog.bz2"),
   ("HONDA", "0375fdf7b1ce594d|2019-06-13--08-32-25--3"),      # HONDA.ACCORD
   ("HONDA", "99c94dc769b5d96e|2019-08-03--14-19-59--2"),      # HONDA.CIVIC
   ("TOYOTA", "77611a1fac303767|2020-02-29--13-29-33--3"),     # TOYOTA.COROLLA_TSS2
@@ -72,7 +72,7 @@ def test_process(cfg, lr, cmp_log_fn, ignore_fields=[], ignore_msgs=[]):
   # check to make sure openpilot is engaged in the route
   # TODO: update routes so enable check can run
   #       failed enable check: honda bosch, hyundai, chrysler, and subaru
-  if cfg.proc_name == "controlsd" and FULL_TEST and False:
+  if cfg.proc_name == "controlsd":
     for msg in log_msgs:
       if msg.which() == "controlsState":
         if msg.controlsState.active:

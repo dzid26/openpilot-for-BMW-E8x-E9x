@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from http.client import ImproperConnectionState
 import numpy as np
 from numpy.linalg import solve
 
@@ -198,9 +199,32 @@ class VehicleModel():
 
 if __name__ == '__main__':
   import math
-  from selfdrive.car.honda.interface import CarInterface
-  from selfdrive.car.honda.values import CAR
+  from selfdrive.car.bmw.interface import CarInterface
+  from selfdrive.car.bmw.values import CAR
 
-  CP = CarInterface.get_params(CAR.CIVIC)
+  CP = CarInterface.get_params(CAR.E82_DCC)
   VM = VehicleModel(CP)
-  print(VM.yaw_rate(math.radians(20), 10.))
+  # print(VM.yaw_rate(math.radians(20), 10.))
+
+  from selfdrive.car.bmw.carcontroller import ANGLE_MAX_BP, ANGLE_MAX, ANGLE_RATE_BP, ANGLE_RATE_WINDUP, ANGLE_RATE_UNWIND
+  
+  # EU guidelines
+  MAX_LATERAL_JERK_EU = 5.0
+  MAX_LATERAL_ACCEL_EU = 3.0
+
+  print("ANGLE_MAX_BMW:")
+  print(ANGLE_MAX)
+  print("ANGLE_MAX EU:")
+  for v_ego in ANGLE_MAX_BP:
+    max_curvature = MAX_LATERAL_ACCEL_EU / (v_ego**2)
+    print(round(math.degrees(VM.get_steer_from_curvature(max_curvature, v_ego)), 1),)
+  
+  print("\nANGLE_RATE_BMW (up/down):")
+  print(ANGLE_RATE_WINDUP)
+  print(ANGLE_RATE_UNWIND)
+
+  print("ANGLE_RATE_EU:")
+  for v_ego in ANGLE_MAX_BP: # ANGLE_RATE_BP has 0 as first element causing divide by zero
+    max_curvature_rate = MAX_LATERAL_JERK_EU / (v_ego**2)
+    print(round(math.degrees(VM.get_steer_from_curvature(max_curvature_rate, v_ego)), 1),)
+

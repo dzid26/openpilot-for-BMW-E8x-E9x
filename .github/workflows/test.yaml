@@ -27,24 +27,6 @@ jobs:
         name: tmppilot.tar.gz
         path: tmppilot.tar.gz
 
-  push:
-    name: push
-    runs-on: ubuntu-16.04
-    needs: build
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && github.repository == 'commaai/openpilot'
-    steps:
-      - uses: actions/download-artifact@v1
-        with:
-          name: tmppilot.tar.gz
-      - name: Load image
-        run: $LOAD
-      - name: Login to dockerhub
-        run: docker login -u wmelching -p ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Tag image
-        run: docker tag tmppilot docker.io/commaai/openpilot:latest
-      - name: Push image
-        run: docker push docker.io/commaai/openpilot:latest
-
   linter:
     name: linter
     runs-on: ubuntu-16.04
@@ -97,7 +79,7 @@ jobs:
       - name: Run replay
         run: |
           CONTAINER_NAME="tmppilot_${GITHUB_SHA}"
-          docker run --shm-size 1G --name ${CONTAINER_NAME} tmppilot /bin/sh -c "cd /tmp/openpilot/selfdrive/test/process_replay && CI=1 ./test_processes.py"
+          docker run --shm-size 1G --name ${CONTAINER_NAME} tmppilot /bin/sh -c "cd /tmp/openpilot/selfdrive/test/process_replay && CI=1 ./test_processes.py --whitelist-cars BMW --blacklist-procs radard"
       - name: Copy diff
         if: always()
         run: |

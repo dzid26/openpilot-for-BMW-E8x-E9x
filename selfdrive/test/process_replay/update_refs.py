@@ -16,7 +16,7 @@ if __name__ == "__main__":
   process_replay_dir = os.path.dirname(os.path.abspath(__file__))
   ref_commit_fn = os.path.join(process_replay_dir, "ref_commit")
 
-  ref_commit = get_git_commit()
+  ref_commit = "ref_log"
   with open(ref_commit_fn, "w") as f:
     f.write(ref_commit)
 
