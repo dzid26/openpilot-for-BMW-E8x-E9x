@@ -196,7 +196,7 @@ class CarController:
       self.steer_rate_limited = target_angle_delta != angle_step #advertise steer beeing rate limited
       
       # steer torque
-      I_steering = 10 #estimated moment of inertia
+      I_steering = 0 #estimated moment of inertia
       
       PLANNER_SAMPLING_SUBRATE = 6 #planner updates target angle every 4 or 6 samples
       if target_angle_lim != self.last_target_angle_lim or self.planner_cnt >= PLANNER_SAMPLING_SUBRATE-1:

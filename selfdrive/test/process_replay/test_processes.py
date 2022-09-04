@@ -14,7 +14,7 @@ from tools.lib.logreader import LogReader
 INJECT_MODEL = 0
 
 segments = [
-  ("BMW", os.path.dirname(os.path.abspath(__file__)) + "/ref_log/2022-08-31--23-27-00--1--rlog.bz2"),
+  ("BMW", os.path.dirname(os.path.abspath(__file__)) + "/ref_log/2022-09-01--22-52-03--4--rlog.bz2"),
   ("HONDA", "0375fdf7b1ce594d|2019-06-13--08-32-25--3"),      # HONDA.ACCORD
   ("HONDA", "99c94dc769b5d96e|2019-08-03--14-19-59--2"),      # HONDA.CIVIC
   ("TOYOTA", "77611a1fac303767|2020-02-29--13-29-33--3"),     # TOYOTA.COROLLA_TSS2

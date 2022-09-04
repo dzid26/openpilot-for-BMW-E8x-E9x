@@ -61,7 +61,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.lateralTuning.init('pid')
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[5.5, 30.], [5.5, 30.]]
-    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.0, 0.0], [1, 5]]
+    ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.0, 0.0], [0.5, 3]]
     ret.lateralTuning.pid.kf = 0
     ret.steerMaxBP = [0.]
     ret.steerMaxV = [SteerLimitParams.MAX_STEERING_TQ]

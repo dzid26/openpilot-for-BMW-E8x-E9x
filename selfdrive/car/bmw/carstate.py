@@ -144,8 +144,8 @@ class CarState(CarStateBase):
 
     ret.genericToggle = self.sportMode
 
-    ret.steeringTorqueEps =  cp_aux.vl['ControlStatus1']['TorqueActual']
-    self.steer_angle_delta = cp_aux.vl['ControlStatus1']['PositionError']
+    ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
+    self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
 
     self.prev_gasPressed = ret.gasPressed
     return ret
@@ -235,14 +235,13 @@ class CarState(CarStateBase):
   @staticmethod
   def get_actuator_can_parser(CP):
     signals = [  # signal name, message name, default value
-      ("TorqueActual", "ControlStatus1", 0),
-      ("TorqueCloseLoopActual", "ControlStatus1", 0),
-      ("SpeedActual", "ControlStatus1", 0),
-      ("PositionError", "ControlStatus1", 0),
-      ("PositionRaw", "SystemStatus2", 0),
+      ("STEERING_ANGLE", "STEERING_STATUS", 0),
+      ("STEERING_TORQUE", "STEERING_STATUS", 0),
+      ("STEERING_SPEED", "STEERING_STATUS", 0),
+      ("CONTROL_STATUS", "STEERING_STATUS", 0),
+      ("TEMPERATURE", "STEERING_STATUS", 0),
     ]
     checks = [ # refresh frequency Hz
-    ("ControlStatus1", 100),
-    ("SystemStatus2", 100),
+    ("STEERING_STATUS", 100),
     ] 
-    return CANParser('OpenActuator', signals, checks, 2)  # 2: Actuator-CAN,
+    return CANParser('ocelot_controls', signals, checks, 2)  # 2: Actuator-CAN,

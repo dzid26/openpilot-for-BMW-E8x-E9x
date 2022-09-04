@@ -1,24 +1,22 @@
 import crcmod
 from opendbc.can.packer import CANPacker
 
-openactuator_checksum = crcmod.mkCrcFun(0x1D7, initCrc=0xFF, rev=False, xorOut=0x00) # 0xeb (implicit notation) HD = 5 (detecting 4, correcting 2 bits)
-
 def create_steer_command(mode, steer_delta, steer_tq, frame):
-    """Creates a CAN message for the actuator ControlCommand"""
-    packer = CANPacker('OpenActuator')
+    """Creates a CAN message for the actuator STEERING_COMMAND"""
+    packer = CANPacker('ocelot_controls')
     values = {
-        "Counter_CMD1": frame % 0xF,
-        "MotorId_CMD1": 0x0,
-        "ControlMode": mode,
-        "PositionChange": steer_delta,
-        "TorqueFeedforward": steer_tq,
-        "TorqueCloseloopMax": 0., #TODO: generate signals for this
+        "COUNTER": frame % 0xF,
+        "STEER_MODE": mode,
+        "STEER_ANGLE": steer_delta,
+        "STEER_TORQUE": steer_tq,
     }
-    dat = packer.make_can_msg("ControlCmd1", 0, values)[2]
-    # values["CRC8_CMD1"] = openactuator_checksum(dat[:7])
-    values["CRC8_CMD1"] = (dat[0] + dat[1] + dat[2] + dat[3] + dat[4] + dat[5] + dat[6]) & 0xFF
+    msg = packer.make_can_msg("STEERING_COMMAND", 0, values)
+    addr = msg[0]
+    dat  = msg[2]
 
-    return packer.make_can_msg("ControlCmd1", 2, values) #bus 2 is the actuator CAN bus
+    values["CHECKSUM"] = calc_checksum_8bit(dat, addr)
+
+    return packer.make_can_msg("STEERING_COMMAND", 2, values) #bus 2 is the actuator CAN bus
 
     
 def calc_checksum_4bit(work_data, msg_id): # 0x130
