@@ -1,82 +1,147 @@
 from cereal import car
-from opendbc.can.packer import CANPacker
-from openpilot.selfdrive.car import apply_std_steer_angle_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_meas_steer_torque_limits
+from openpilot.selfdrive.car.bmw import bmwcan
+from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
+from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
-from openpilot.selfdrive.car.nissan import nissancan
-from openpilot.selfdrive.car.nissan.values import CAR, CarControllerParams
+from opendbc.can.packer import CANPacker
+from openpilot.common.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
+
+CC_STEP = 1 # cruise single click jump - either km or miles
+# Accel limits
+ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
+ACCEL_MAX = 4  # cruise control rapid clicking
+ACCEL_SLOW = 3 # cruise control hold up
+DECEL_SLOW = -2   # cruise control decrease speed slowly
+DECEL_MIN = -6  # cruise control hold down
+ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
-    self.car_fingerprint = CP.carFingerprint
+    self.flags = CP.flags
     self.frame = 0
 
-    self.lkas_max_torque = 0
-    self.apply_angle_last = 0
+
+    self.braking = False
+    # redundant safety check with the board
+    self.last_controls_enabled = False
+    self.apply_steer_last = 0
+    self.accel_steady = 0.
+    self.last_frame_cruise_cmd_sent = 0
+    self.last_accel_req = 0
+    self.cruise_speed_prev = 0
+    self.calcDesiredSpeed = 0
+    self.target_speed = 0
+
+    self.cruise_bus = CanBus.F_CAN
+    if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
+      self.cruise_bus = CanBus.PT_CAN
+    else:
+      self.cruise_bus = CanBus.F_CAN
 
     self.packer = CANPacker(dbc_name)
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
-    hud_control = CC.hudControl
-    pcm_cancel_cmd = CC.cruiseControl.cancel
-
     can_sends = []
 
-    ### STEER ###
-    steer_hud_alert = 1 if hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw) else 0
+    # detect check driver pressing as well
+    # check whether speed changed in the direction that was commanded - covers OP and driver's commands
+    if (self.cruise_speed_prev - CS.out.cruiseState.speed) != 0:
+      self.last_accel_req = self.cruise_speed_prev - CS.out.cruiseState.speed
 
-    if CC.latActive:
-      # windup slower
-      apply_angle = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_angle_last, CS.out.vEgoRaw, CarControllerParams)
+      # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
+      #it was probably driver pressing stalks. In that case update the timestamp too
+      if (self.frame - self.last_frame_cruise_cmd_sent) * DT_CTRL > (DT_CTRL * 1.5): #ignore if cruiseState.speed changed shortly after sending command
+        self.last_frame_cruise_cmd_sent = self.frame
 
-      # Max torque from driver before EPS will give up and not apply torque
-      if not bool(CS.out.steeringPressed):
-        self.lkas_max_torque = CarControllerParams.LKAS_MAX_TORQUE
-      else:
-        # Scale max torque based on how much torque the driver is applying to the wheel
-        self.lkas_max_torque = max(
-          # Scale max torque down to half LKAX_MAX_TORQUE as a minimum
-          CarControllerParams.LKAS_MAX_TORQUE * 0.5,
-          # Start scaling torque at STEER_THRESHOLD
-          CarControllerParams.LKAS_MAX_TORQUE - 0.6 * max(0, abs(CS.out.steeringTorque) - CarControllerParams.STEER_THRESHOLD)
-        )
+    time_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent) * DT_CTRL
 
+    # *** desired speed model ***
+    if abs(actuators.accel) < 0.1:
+      self.calcDesiredSpeed = CS.out.vEgo
+    self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
+
+    # hysteresis
+    speed_diff_req = (self.calcDesiredSpeed - CS.out.cruiseState.speed) * CV.KPH_TO_MS if CS.is_metric else CV.MPH_TO_MS
+    speed_margin_thresh = 0.1
+    hysteresis_timeout = 0.2
+    # hysteresis, cruiseState.speed changes in steps
+    if self.last_accel_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
+      speed_diff_err_up =   speed_margin_thresh
+      speed_diff_err_dn =  -CC_STEP
+    elif self.last_accel_req < 0 and actuators.accel < 0.2 and  time_since_cruise_sent < hysteresis_timeout:
+      speed_diff_err_up =  CC_STEP
+      speed_diff_err_dn = -speed_margin_thresh
     else:
-      apply_angle = CS.out.steeringAngleDeg
-      self.lkas_max_torque = 0
+      speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
+      speed_diff_err_dn = -CC_STEP / 2
 
-    self.apply_angle_last = apply_angle
+    cruise_tick = 0.2 # default rate
+    accel = 1
+    if abs(actuators.accel) > 1 and abs(speed_diff_req)>1:
+      cruise_tick = 0.1   #-1 no delay - emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
+      accel = 2
+    # elif round(abs(speed_diff_req)) == 1:
+    #   self.last_frame_cruise_cmd_sent = self.frame #reset counter
+    #   cruise_tick = 0.35 #slow period
 
-    if self.CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL, CAR.NISSAN_ALTIMA) and pcm_cancel_cmd:
-      can_sends.append(nissancan.create_acc_cancel_cmd(self.packer, self.car_fingerprint, CS.cruise_throttle_msg))
 
-    # TODO: Find better way to cancel!
-    # For some reason spamming the cancel button is unreliable on the Leaf
-    # We now cancel by making propilot think the seatbelt is unlatched,
-    # this generates a beep and a warning message every time you disengage
-    if self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC) and self.frame % 2 == 0:
-      can_sends.append(nissancan.create_cancel_msg(self.packer, CS.cancel_msg, pcm_cancel_cmd))
+    if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.frame))
+      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_accel_req = 0
+      print("cancel")
+    elif CC.cruiseControl.resume and time_since_cruise_sent > cruise_tick:
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.resume, self.cruise_bus, self.frame))
+      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_accel_req = accel
+      self.target_speed = CS.out.cruiseState.speed + 1
+    elif speed_diff_req > speed_diff_err_up and CC.enabled and time_since_cruise_sent > cruise_tick:
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.frame))
+      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_accel_req = accel
+      self.target_speed = CS.out.cruiseState.speed + 1
+    elif speed_diff_req < speed_diff_err_dn and CC.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.frame))
+      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_accel_req = -accel
+      self.target_speed = CS.out.cruiseState.speed - 1
 
-    can_sends.append(nissancan.create_steering_control(
-      self.packer, apply_angle, self.frame, CC.latActive, self.lkas_max_torque))
+    self.cruise_speed_prev = CS.out.cruiseState.speed
 
-    # Below are the HUD messages. We copy the stock message and modify
-    if self.CP.carFingerprint != CAR.NISSAN_ALTIMA:
-      if self.frame % 2 == 0:
-        can_sends.append(nissancan.create_lkas_hud_msg(self.packer, CS.lkas_hud_msg, CC.enabled, hud_control.leftLaneVisible, hud_control.rightLaneVisible,
-                                                       hud_control.leftLaneDepart, hud_control.rightLaneDepart))
+    # *** apply steering torque ***
+    apply_steer = 0
+    if CC.enabled:
+      new_steer = actuators.steer * CarControllerParams.STEER_MAX
+      # explicitly clip torque before sending on CAN
+      apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
 
-      if self.frame % 50 == 0:
-        can_sends.append(nissancan.create_lkas_hud_info_msg(
-          self.packer, CS.lkas_hud_info_msg, steer_hud_alert
-        ))
+      can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
+      # *** control msgs ***
+      if (self.frame % 10) == 0: #slow print
+        brake_torque = actuators.accel
+        frame_number = self.frame
+        print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
+    elif (not CC.enabled and self.last_controls_enabled):  # cancel on falling edge
+      can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
+
+
+    self.apply_steer_last = apply_steer
+    # self.last_accel = apply_accel
+    self.last_controls_enabled = CC.enabled
+
 
     new_actuators = actuators.as_builder()
-    new_actuators.steeringAngleDeg = apply_angle
+    new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
+    new_actuators.steerOutputCan = self.apply_steer_last
+
+    new_actuators.accel = self.last_accel_req
+    new_actuators.speed = self.target_speed
 
     self.frame += 1
     return new_actuators, can_sends

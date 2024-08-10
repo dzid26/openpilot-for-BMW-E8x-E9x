@@ -1,107 +1,49 @@
 from dataclasses import dataclass, field
 
-from cereal import car
-from panda.python import uds
-from openpilot.selfdrive.car import AngleRateLimit, CarSpecs, DbcDict, PlatformConfig, Platforms, dbc_dict
-from openpilot.selfdrive.car.docs_definitions import CarDocs, CarHarness, CarParts
-from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
+from enum import IntFlag
+from openpilot.selfdrive.car import Platforms, CarSpecs, CarDocs, PlatformConfig, dbc_dict, DbcDict, STD_CARGO_KG
+from openpilot.common.conversions import Conversions as CV
 
-Ecu = car.CarParams.Ecu
+# Steer torque limits
+class CarControllerParams: #controls running @ 100hz
+  STEER_MAX = 12  # Nm
+  STEER_DELTA_UP = 10 / 100       # 10Nm/s
+  STEER_DELTA_DOWN = 1000 / 100     # 10Nm/sample - no limit
+  STEER_ERROR_MAX = 999     # max delta between torque cmd and torque motor
 
-
-class CarControllerParams:
-  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., .8, .15])
-  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., 3.5, 0.4])
-  LKAS_MAX_TORQUE = 1               # A value of 1 is easy to overpower
-  STEER_THRESHOLD = 1.0
-
+  # STEER_BACKLASH = 1 #deg
   def __init__(self, CP):
     pass
 
+class BmwFlags(IntFlag):
+  # Detected Flags
+  STEPPER_SERVO_CAN = 2 ** 0
+  NORMAL_CRUISE_CONTROL = 2 ** 1          # CC  $540
+  DYNAMIC_CRUISE_CONTROL = 2 ** 2         # DCC $544
+  ACTIVE_CRUISE_CONTROL_LDM = 2 ** 3      # ACC $541 - genuine config with LDM and ACC sensor - not supported
+  ACTIVE_CRUISE_CONTROL_NO_LDM = 2 ** 4   # ACC $541 - diy config with no LDM - DSC, DME, KOMBI coded to $541
+  SERVOTRONIC = 2 ** 5                    # ServoTonic $216A - TODO: needs firmware query
+
+class CanBus:
+  PT_CAN = 2
+  F_CAN = 0
+  ALT = 1 # StepperServoCAN
+
 
 @dataclass
-class NissanCarDocs(CarDocs):
-  package: str = "ProPILOT Assist"
-  car_parts: CarParts = field(default_factory=CarParts.common([CarHarness.nissan_a]))
-
-
-@dataclass(frozen=True)
-class NissanCarSpecs(CarSpecs):
-  centerToFrontRatio: float = 0.44
-  steerRatio: float = 17.
-
-
-@dataclass
-class NissanPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('nissan_x_trail_2017_generated', None))
+class BmwPlatformConfig(PlatformConfig):
+  dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('bmw_e9x_e8x', None))
 
 
 class CAR(Platforms):
-  NISSAN_XTRAIL = NissanPlatformConfig(
-    [NissanCarDocs("Nissan X-Trail 2017")],
-    NissanCarSpecs(mass=1610, wheelbase=2.705)
+  BMW_E82 = BmwPlatformConfig(
+    [CarDocs("BMW E82 2007", "VO540, VO544, VO541")],
+    CarSpecs(mass=3145. * CV.LB_TO_KG + STD_CARGO_KG, wheelbase=2.66, steerRatio=16.00)
   )
-  NISSAN_LEAF = NissanPlatformConfig(
-    [NissanCarDocs("Nissan Leaf 2018-23", video_link="https://youtu.be/vaMbtAh_0cY")],
-    NissanCarSpecs(mass=1610, wheelbase=2.705),
-    dbc_dict('nissan_leaf_2018_generated', None),
-  )
-  # Leaf with ADAS ECU found behind instrument cluster instead of glovebox
-  # Currently the only known difference between them is the inverted seatbelt signal.
-  NISSAN_LEAF_IC = NISSAN_LEAF.override(car_docs=[])
-  NISSAN_ROGUE = NissanPlatformConfig(
-    [NissanCarDocs("Nissan Rogue 2018-20")],
-    NissanCarSpecs(mass=1610, wheelbase=2.705)
-  )
-  NISSAN_ALTIMA = NissanPlatformConfig(
-    [NissanCarDocs("Nissan Altima 2019-20", car_parts=CarParts.common([CarHarness.nissan_b]))],
-    NissanCarSpecs(mass=1492, wheelbase=2.824)
+  BMW_E90 = BmwPlatformConfig(
+    [CarDocs("BMW E90 2006", "VO540, VO544, VO541")],
+    CarSpecs(mass=3300. * CV.LB_TO_KG + STD_CARGO_KG, wheelbase=2.76, steerRatio=16.00)
   )
 
 
 DBC = CAR.create_dbc_map()
-
-# Default diagnostic session
-NISSAN_DIAGNOSTIC_REQUEST_KWP = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, 0x81])
-NISSAN_DIAGNOSTIC_RESPONSE_KWP = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, 0x81])
-
-# Manufacturer specific
-NISSAN_DIAGNOSTIC_REQUEST_KWP_2 = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, 0xda])
-NISSAN_DIAGNOSTIC_RESPONSE_KWP_2 = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, 0xda])
-
-NISSAN_VERSION_REQUEST_KWP = b'\x21\x83'
-NISSAN_VERSION_RESPONSE_KWP = b'\x61\x83'
-
-NISSAN_RX_OFFSET = 0x20
-
-FW_QUERY_CONFIG = FwQueryConfig(
-  requests=[request for bus, logging in ((0, False), (1, True)) for request in [
-    Request(
-      [NISSAN_DIAGNOSTIC_REQUEST_KWP, NISSAN_VERSION_REQUEST_KWP],
-      [NISSAN_DIAGNOSTIC_RESPONSE_KWP, NISSAN_VERSION_RESPONSE_KWP],
-      bus=bus,
-      logging=logging,
-    ),
-    Request(
-      [NISSAN_DIAGNOSTIC_REQUEST_KWP, NISSAN_VERSION_REQUEST_KWP],
-      [NISSAN_DIAGNOSTIC_RESPONSE_KWP, NISSAN_VERSION_RESPONSE_KWP],
-      rx_offset=NISSAN_RX_OFFSET,
-      bus=bus,
-      logging=logging,
-    ),
-    # Rogue's engine solely responds to this
-    Request(
-      [NISSAN_DIAGNOSTIC_REQUEST_KWP_2, NISSAN_VERSION_REQUEST_KWP],
-      [NISSAN_DIAGNOSTIC_RESPONSE_KWP_2, NISSAN_VERSION_RESPONSE_KWP],
-      bus=bus,
-      logging=logging,
-    ),
-    Request(
-      [StdQueries.MANUFACTURER_SOFTWARE_VERSION_REQUEST],
-      [StdQueries.MANUFACTURER_SOFTWARE_VERSION_RESPONSE],
-      rx_offset=NISSAN_RX_OFFSET,
-      bus=bus,
-      logging=logging,
-    ),
-  ]],
-)

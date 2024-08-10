@@ -1,197 +1,188 @@
-import copy
-from collections import deque
 from cereal import car
 from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
-from openpilot.selfdrive.car.nissan.values import CAR, DBC, CarControllerParams
-
-TORQUE_SAMPLES = 12
+from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.bmw.values import DBC, CanBus, BmwFlags
+from openpilot.common.params import Params
 
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
-    can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
+    can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
+    self.shifter_values = can_define.dv["TransmissionDataDisplay"]['ShiftLeverPosition']
+    self.steer_angle_delta = 0.
+    self.gas_kickdown = False
 
-    self.lkas_hud_msg = {}
-    self.lkas_hud_info_msg = {}
+    self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo use is_metric from carstate
+    self.cruise_plus = False
+    self.cruise_minus = False
+    self.cruise_plus5 = False
+    self.cruise_minus5 = False
+    self.cruise_resume = False
+    self.cruise_cancel = False
+    self.cruise_cancelUpStalk = False
+    self.cruise_cancelDnStalk = False
+    self.prev_cruise_plus = self.cruise_plus
+    self.prev_cruise_minus = self.cruise_minus
+    self.prev_cruise_plus5 = self.cruise_plus5
+    self.prev_cruise_minus5 = self.cruise_minus5
+    self.prev_cruise_resume = self.cruise_resume
+    self.prev_cruise_cancel = self.cruise_cancel
+    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
+    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
 
-    self.steeringTorqueSamples = deque(TORQUE_SAMPLES*[0], TORQUE_SAMPLES)
-    self.shifter_values = can_define.dv["GEARBOX"]["GEAR_SHIFTER"]
+    self.right_blinker_pressed = False
+    self.left_blinker_pressed = False
+    self.otherButtons = False
+    self.prev_gasPressed = False
+    self.sportMode = False
 
-    self.prev_distance_button = 0
-    self.distance_button = 0
+  def update(self, cp_PT, cp_F, cp_aux):
+    # set these prev states at the beginning because they are used outside the update()
+    self.prev_cruise_plus = self.cruise_plus
+    self.prev_cruise_minus = self.cruise_minus
+    self.prev_cruise_plus5 = self.cruise_plus5
+    self.prev_cruise_minus5 = self.cruise_minus5
+    self.prev_cruise_resume = self.cruise_resume
+    self.prev_cruise_cancel = self.cruise_cancel
+    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
+    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
 
-  def update(self, cp, cp_adas, cp_cam):
     ret = car.CarState.new_message()
 
-    self.prev_distance_button = self.distance_button
-    self.distance_button = cp.vl["CRUISE_THROTTLE"]["FOLLOW_DISTANCE_BUTTON"]
+    ret.doorOpen = False # not any([cp.vl["SEATS_DOORS"]['DOOR_OPEN_FL'], cp.vl["SEATS_DOORS"]['DOOR_OPEN_FR']
+    ret.seatbeltUnlatched = False # not cp.vl["SEATS_DOORS"]['SEATBELT_DRIVER_UNLATCHED']
 
-    if self.CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL, CAR.NISSAN_ALTIMA):
-      ret.gas = cp.vl["GAS_PEDAL"]["GAS_PEDAL"]
-    elif self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-      ret.gas = cp.vl["CRUISE_THROTTLE"]["GAS_PEDAL"]
-
-    ret.gasPressed = bool(ret.gas > 3)
-
-    if self.CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL, CAR.NISSAN_ALTIMA):
-      ret.brakePressed = bool(cp.vl["DOORS_LIGHTS"]["USER_BRAKE_PRESSED"])
-    elif self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-      ret.brakePressed = bool(cp.vl["CRUISE_THROTTLE"]["USER_BRAKE_PRESSED"])
+    ret.brakePressed = cp_PT.vl["EngineAndBrake"]['BrakePressed'] != 0
+    ret.parkingBrake = cp_PT.vl["Status_contact_handbrake"]["Handbrake_pulled_up"] != 0
+    ret.gas = cp_PT.vl['AccPedal']["AcceleratorPedalPercentage"]
+    ret.gasPressed = cp_PT.vl['AccPedal']["AcceleratorPedalPressed"] != 0
+    self.gas_kickdown = cp_PT.vl['AccPedal']["KickDownPressed"] != 0 #BMW has kickdown button at the bottom of the pedal
 
     ret.wheelSpeeds = self.get_wheel_speeds(
-      cp.vl["WHEEL_SPEEDS_FRONT"]["WHEEL_SPEED_FL"],
-      cp.vl["WHEEL_SPEEDS_FRONT"]["WHEEL_SPEED_FR"],
-      cp.vl["WHEEL_SPEEDS_REAR"]["WHEEL_SPEED_RL"],
-      cp.vl["WHEEL_SPEEDS_REAR"]["WHEEL_SPEED_RR"],
+      cp_PT.vl["WheelSpeeds"]["Wheel_FL"],
+      cp_PT.vl["WheelSpeeds"]["Wheel_FR"],
+      cp_PT.vl["WheelSpeeds"]["Wheel_RL"],
+      cp_PT.vl["WheelSpeeds"]["Wheel_RR"],
     )
-    ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
-
+    ret.vEgoRaw = cp_PT.vl['Speed']["VehicleSpeed"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.standstill = cp.vl["WHEEL_SPEEDS_REAR"]["WHEEL_SPEED_RL"] == 0.0 and cp.vl["WHEEL_SPEEDS_REAR"]["WHEEL_SPEED_RR"] == 0.0
+    ret.standstill = not cp_PT.vl['Speed']["MovingForward"] and not cp_PT.vl['Speed']["MovingReverse"]
 
-    if self.CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      ret.cruiseState.enabled = bool(cp.vl["CRUISE_STATE"]["CRUISE_ENABLED"])
-    else:
-      ret.cruiseState.enabled = bool(cp_adas.vl["CRUISE_STATE"]["CRUISE_ENABLED"])
-
-    if self.CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL):
-      ret.seatbeltUnlatched = cp.vl["HUD"]["SEATBELT_DRIVER_LATCHED"] == 0
-      ret.cruiseState.available = bool(cp_cam.vl["PRO_PILOT"]["CRUISE_ON"])
-    elif self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-      if self.CP.carFingerprint == CAR.NISSAN_LEAF:
-        ret.seatbeltUnlatched = cp.vl["SEATBELT"]["SEATBELT_DRIVER_LATCHED"] == 0
-      elif self.CP.carFingerprint == CAR.NISSAN_LEAF_IC:
-        ret.seatbeltUnlatched = cp.vl["CANCEL_MSG"]["CANCEL_SEATBELT"] == 1
-      ret.cruiseState.available = bool(cp.vl["CRUISE_THROTTLE"]["CRUISE_AVAILABLE"])
-    elif self.CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      ret.seatbeltUnlatched = cp.vl["HUD"]["SEATBELT_DRIVER_LATCHED"] == 0
-      ret.cruiseState.available = bool(cp_adas.vl["PRO_PILOT"]["CRUISE_ON"])
-
-    if self.CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      speed = cp.vl["PROPILOT_HUD"]["SET_SPEED"]
-    else:
-      speed = cp_adas.vl["PROPILOT_HUD"]["SET_SPEED"]
-
-    if speed != 255:
-      if self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-        conversion = CV.MPH_TO_MS if cp.vl["HUD_SETTINGS"]["SPEED_MPH"] else CV.KPH_TO_MS
-      else:
-        conversion = CV.MPH_TO_MS if cp.vl["HUD"]["SPEED_MPH"] else CV.KPH_TO_MS
-      ret.cruiseState.speed = speed * conversion
-      ret.cruiseState.speedCluster = (speed - 1) * conversion  # Speed on HUD is always 1 lower than actually sent on can bus
-
-    if self.CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      ret.steeringTorque = cp_cam.vl["STEER_TORQUE_SENSOR"]["STEER_TORQUE_DRIVER"]
-    else:
-      ret.steeringTorque = cp.vl["STEER_TORQUE_SENSOR"]["STEER_TORQUE_DRIVER"]
-
-    self.steeringTorqueSamples.append(ret.steeringTorque)
-    # Filtering driver torque to prevent steeringPressed false positives
-    ret.steeringPressed = bool(abs(sum(self.steeringTorqueSamples) / TORQUE_SAMPLES) > CarControllerParams.STEER_THRESHOLD)
-
-    ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"]
-
-    ret.leftBlinker = bool(cp.vl["LIGHTS"]["LEFT_BLINKER"])
-    ret.rightBlinker = bool(cp.vl["LIGHTS"]["RIGHT_BLINKER"])
-
-    ret.doorOpen = any([cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_RR"],
-                        cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_RL"],
-                        cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_FR"],
-                        cp.vl["DOORS_LIGHTS"]["DOOR_OPEN_FL"]])
-
-    ret.espDisabled = bool(cp.vl["ESP"]["ESP_DISABLED"])
-
-    can_gear = int(cp.vl["GEARBOX"]["GEAR_SHIFTER"])
+    ret.steeringRateDeg = (cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed'])
+    can_gear = int(cp_PT.vl["TransmissionDataDisplay"]['ShiftLeverPosition'])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
+    blinker_on = cp_PT.vl["TurnSignals"]['TurnSignalActive'] != 0 and cp_PT.vl["TurnSignals"]['TurnSignalIdle'] == 0
+    ret.leftBlinker = blinker_on and cp_PT.vl["TurnSignals"]['LeftTurn'] !=0   # blinking
+    ret.rightBlinker = blinker_on and cp_PT.vl["TurnSignals"]['RightTurn'] !=0   # blinking
+    self.right_blinker_pressed = not blinker_on and cp_PT.vl["TurnSignals"]['RightTurn'] != 0
+    self.left_blinker_pressed = not blinker_on and cp_PT.vl["TurnSignals"]['LeftTurn'] != 0
 
-    if self.CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      self.lkas_enabled = bool(cp.vl["LKAS_SETTINGS"]["LKAS_ENABLED"])
+    self.sportMode = cp_PT.vl["TransmissionDataDisplay"]['SportButtonState'] != 0
+
+    self.otherButtons = \
+      cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
+      cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0 or \
+      self.prev_gasPressed and not ret.gasPressed # trat gas pedal tap as a button - button events indicate driver engagement
+      # TODO: add other buttons (lights, gear, DTC, etc)
+
+    # emulate driver steering torque - allows lane change assist on blinker hold
+    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor, so lightly pressing the gas indicates driver intention
+    if ret.steeringPressed and ret.leftBlinker:
+      ret.steeringTorque = 1
+    elif ret.steeringPressed and  ret.rightBlinker:
+      ret.steeringTorque = -1
     else:
-      self.lkas_enabled = bool(cp_adas.vl["LKAS_SETTINGS"]["LKAS_ENABLED"])
+      ret.steeringTorque = 0
 
-    self.cruise_throttle_msg = copy.copy(cp.vl["CRUISE_THROTTLE"])
+    ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
+    ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
+    ret.cruiseState.nonAdaptive = True
+    if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL: #_DCC implies the F-CAN bus has to be connected
+      ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
+      ret.cruiseState.speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed']
+      ret.cruiseState.enabled = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseActive'] != 0
+      # if we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
+      self.cruise_plus = cp_F.vl["CruiseControlStalk"]['plus1'] != 0
+      self.cruise_minus = cp_F.vl["CruiseControlStalk"]['minus1'] != 0
+      self.cruise_plus5 = cp_F.vl["CruiseControlStalk"]['plus5'] != 0
+      self.cruise_minus5 = cp_F.vl["CruiseControlStalk"]['minus5'] != 0
+      self.cruise_resume = cp_F.vl["CruiseControlStalk"]['resume'] != 0
+      self.cruise_cancel = cp_F.vl["CruiseControlStalk"]['cancel'] != 0
+      self.cruise_cancelUpStalk = cp_F.vl["CruiseControlStalk"]['cancel_lever_up'] != 0
+    elif self.CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
+      ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
+      ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed']
+      ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
+      self.cruise_plus = cp_PT.vl["CruiseControlStalk"]['plus1'] != 0
+      self.cruise_minus = cp_PT.vl["CruiseControlStalk"]['minus1'] != 0
+      self.cruise_plus5 = cp_PT.vl["CruiseControlStalk"]['plus5'] != 0
+      self.cruise_minus5 = cp_PT.vl["CruiseControlStalk"]['minus5'] != 0
+      self.cruise_resume = cp_PT.vl["CruiseControlStalk"]['resume'] != 0
+      self.cruise_cancel = cp_PT.vl["CruiseControlStalk"]['cancel'] != 0
+      self.cruise_cancelUpStalk = cp_PT.vl["CruiseControlStalk"]['cancel_lever_up'] != 0
 
-    if self.CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-      self.cancel_msg = copy.copy(cp.vl["CANCEL_MSG"])
+    self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
 
-    if self.CP.carFingerprint != CAR.NISSAN_ALTIMA:
-      self.lkas_hud_msg = copy.copy(cp_adas.vl["PROPILOT_HUD"])
-      self.lkas_hud_info_msg = copy.copy(cp_adas.vl["PROPILOT_HUD_INFO_MSG"])
+    # *** determine is_metric based speed target vs actual speed ***
+    # if ret.cruiseState.enabled:
+    #   if abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_KPH) < 0.3:
+    #     self.is_metric = True
+    #   elif abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_MPH) < 0.3:
+    #     self.is_metric = False
 
+    if self.is_metric: #recalculate to the right unit
+      ret.cruiseState.speed = ret.cruiseState.speed * CV.KPH_TO_MS
+    else:
+      ret.cruiseState.speed = ret.cruiseState.speed * CV.MPH_TO_MS
+
+    ret.genericToggle = self.sportMode
+
+    ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
+    self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
+
+    self.prev_gasPressed = ret.gasPressed
     return ret
 
   @staticmethod
-  def get_can_parser(CP):
+  def get_can_parser(CP): #PT-CAN
     messages = [
-      # sig_address, frequency
-      ("STEER_ANGLE_SENSOR", 100),
-      ("WHEEL_SPEEDS_REAR", 50),
-      ("WHEEL_SPEEDS_FRONT", 50),
-      ("ESP", 25),
-      ("GEARBOX", 25),
-      ("DOORS_LIGHTS", 10),
-      ("LIGHTS", 10),
+      ("EngineAndBrake", 100),
+      ("TransmissionDataDisplay", 5),
+      ("AccPedal", 100),
+      ("Speed", 50),
+      ("SteeringWheelAngle", 100),
+      ("TurnSignals", 0),
+      ("SteeringButtons", 0),
+      ("WheelSpeeds", 50), # 100 on F-CAN
+      ("CruiseControlStalk", 5),
+      ("StatusDSC_KCAN", 50),
+      ("Status_contact_handbrake", 0),
     ]
 
-    if CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL, CAR.NISSAN_ALTIMA):
-      messages += [
-        ("GAS_PEDAL", 100),
-        ("CRUISE_THROTTLE", 50),
-        ("HUD", 25),
-      ]
+    if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
+      messages.append(("DynamicCruiseControlStatus", 5))
+    if CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
+      messages.append(("CruiseControlStatus", 5))
 
-    elif CP.carFingerprint in (CAR.NISSAN_LEAF, CAR.NISSAN_LEAF_IC):
-      messages += [
-        ("BRAKE_PEDAL", 100),
-        ("CRUISE_THROTTLE", 50),
-        ("CANCEL_MSG", 50),
-        ("HUD_SETTINGS", 25),
-        ("SEATBELT", 10),
-      ]
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CanBus.PT_CAN)  # 0: PT-CAN
 
-    if CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      messages += [
-        ("CRUISE_STATE", 10),
-        ("LKAS_SETTINGS", 10),
-        ("PROPILOT_HUD", 50),
-      ]
-      return CANParser(DBC[CP.carFingerprint]["pt"], messages, 1)
-
-    messages.append(("STEER_TORQUE_SENSOR", 100))
-
-    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
-
-  @staticmethod
-  def get_adas_can_parser(CP):
-    # this function generates lists for signal, messages and initial values
-
-    if CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      messages = [
-        ("LKAS", 100),
-        ("PRO_PILOT", 100),
+  @staticmethod # $540 vehicle option could use just PT_CAN, but $544 requires sending and receiving cruise commands on F-CAN. Use F-can. Works for both options
+  def get_F_can_parser(CP):
+    if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
+      messages = [  # refresh frequency Hz
+      ("SteeringWheelAngle_DSC", 100),
+      ("CruiseControlStalk",  5),
       ]
     else:
-      messages = [
-        ("PROPILOT_HUD_INFO_MSG", 2),
-        ("LKAS_SETTINGS", 10),
-        ("CRUISE_STATE", 50),
-        ("PROPILOT_HUD", 50),
-        ("LKAS", 100),
-      ]
+      messages = []
 
-    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CanBus.F_CAN)
 
   @staticmethod
-  def get_cam_can_parser(CP):
-    messages = []
-
-    if CP.carFingerprint in (CAR.NISSAN_ROGUE, CAR.NISSAN_XTRAIL):
-      messages.append(("PRO_PILOT", 100))
-    elif CP.carFingerprint == CAR.NISSAN_ALTIMA:
-      messages.append(("STEER_TORQUE_SENSOR", 100))
-      return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
-
-    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 1)
+  def get_actuator_can_parser(CP):
+    messages = [ # refresh frequency Hz
+    ("STEERING_STATUS", 100),
+    ]
+    return CANParser('ocelot_controls', messages, CanBus.ALT)  # 2: Actuator-CAN,

@@ -7,7 +7,7 @@ from openpilot.selfdrive.car.honda.values import CAR as HONDA
 from openpilot.selfdrive.car.hyundai.values import CAR as HYUNDAI
 from openpilot.selfdrive.car.mazda.values import CAR as MAZDA
 from openpilot.selfdrive.car.mock.values import CAR as MOCK
-from openpilot.selfdrive.car.nissan.values import CAR as NISSAN
+from openpilot.selfdrive.car.bmw.values import CAR as BMW
 from openpilot.selfdrive.car.subaru.values import CAR as SUBARU
 from openpilot.selfdrive.car.tesla.values import CAR as TESLA
 from openpilot.selfdrive.car.toyota.values import CAR as TOYOTA
@@ -256,11 +256,8 @@ MIGRATION = {
   "MAZDA 6": MAZDA.MAZDA_6,
   "MAZDA CX-9 2021": MAZDA.MAZDA_CX9_2021,
   "MAZDA CX-5 2022": MAZDA.MAZDA_CX5_2022,
-  "NISSAN X-TRAIL 2017": NISSAN.NISSAN_XTRAIL,
-  "NISSAN LEAF 2018": NISSAN.NISSAN_LEAF,
-  "NISSAN LEAF 2018 Instrument Cluster": NISSAN.NISSAN_LEAF_IC,
-  "NISSAN ROGUE 2019": NISSAN.NISSAN_ROGUE,
-  "NISSAN ALTIMA 2020": NISSAN.NISSAN_ALTIMA,
+  "BMW E82 2009": BMW.BMW_E82,
+  "BMW E90 2008": BMW.BMW_E90,
   "SUBARU ASCENT LIMITED 2019": SUBARU.SUBARU_ASCENT,
   "SUBARU OUTBACK 6TH GEN": SUBARU.SUBARU_OUTBACK,
   "SUBARU LEGACY 7TH GEN": SUBARU.SUBARU_LEGACY,

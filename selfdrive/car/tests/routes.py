@@ -6,7 +6,7 @@ from openpilot.selfdrive.car.gm.values import CAR as GM
 from openpilot.selfdrive.car.ford.values import CAR as FORD
 from openpilot.selfdrive.car.honda.values import CAR as HONDA
 from openpilot.selfdrive.car.hyundai.values import CAR as HYUNDAI
-from openpilot.selfdrive.car.nissan.values import CAR as NISSAN
+from openpilot.selfdrive.car.bmw.values import CAR as BMW
 from openpilot.selfdrive.car.mazda.values import CAR as MAZDA
 from openpilot.selfdrive.car.subaru.values import CAR as SUBARU
 from openpilot.selfdrive.car.toyota.values import CAR as TOYOTA
@@ -25,6 +25,8 @@ non_tested_cars = [
   HONDA.HONDA_ODYSSEY_CHN,
   VOLKSWAGEN.VOLKSWAGEN_CRAFTER_MK2,  # need a route from an ACC-equipped Crafter
   SUBARU.SUBARU_FORESTER_HYBRID,
+  BMW.BMW_E90,
+  BMW.BMW_E82,
 ]
 
 
@@ -275,12 +277,6 @@ routes = [
   CarTestRoute("df5ca7660000fba8|2020-06-16--17-37-19", SUBARU.SUBARU_LEGACY_PREGLOBAL),
   CarTestRoute("5ab784f361e19b78|2020-06-08--16-30-41", SUBARU.SUBARU_OUTBACK_PREGLOBAL),
   CarTestRoute("e19eb5d5353b1ac1|2020-08-09--14-37-56", SUBARU.SUBARU_OUTBACK_PREGLOBAL_2018),
-
-  CarTestRoute("fbbfa6af821552b9|2020-03-03--08-09-43", NISSAN.NISSAN_XTRAIL),
-  CarTestRoute("5b7c365c50084530|2020-03-25--22-10-13", NISSAN.NISSAN_LEAF),
-  CarTestRoute("22c3dcce2dd627eb|2020-12-30--16-38-48", NISSAN.NISSAN_LEAF_IC),
-  CarTestRoute("059ab9162e23198e|2020-05-30--09-41-01", NISSAN.NISSAN_ROGUE),
-  CarTestRoute("b72d3ec617c0a90f|2020-12-11--15-38-17", NISSAN.NISSAN_ALTIMA),
 
   CarTestRoute("32a319f057902bb3|2020-04-27--15-18-58", MAZDA.MAZDA_CX5),
   CarTestRoute("10b5a4b380434151|2020-08-26--17-11-45", MAZDA.MAZDA_CX9),

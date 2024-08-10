@@ -26,42 +26,48 @@ Quick start: `curl -fsSL https://github.com/dzid26/opendbc-BMW-E8x-E9x | bash`
 [![X Follow](https://img.shields.io/twitter/follow/comma_ai)](https://x.com/comma_ai)
 [![Discord](https://img.shields.io/discord/469524606043160576)](https://discord.comma.ai)
 
-</div>
-[![](https://i.imgur.com/UelUjKAh.png)](#)
-
-
 ---
 BMW integration
 ------
-This is development fork for openpilot integration specific to BMW E-series 2008-2013.
+This is development fork for openpilot integration specific to BMW E-series 2008-2013. (BMW E8x, E9x, maybe E60).
+(My car is E82 with added DCC and servotronic).
 
-Currently only **longitudinal control** is supported.  (BMW E9x, E8x, maybe E60)
-It uses cruise control CANbus to request speed so it also inherits limitation of the stock cruise control, such as minimum 20mph engagement speed.
-The speed target relies purely on openpilot vision model.
+- **Lateral control** is optional and supported via external streering actuator based on [StepperServoCAN](https://github.com/dzid26/StepperServoCAN).
+- **Longitudinal control** is supported via injecting cruise control +/- stalk commands.
+Since it uses cruise control CAN bus requests to adjust speed it inherits limitation of the stock cruise control, such as minimum 20mph engagement speed and acceelration rates.
+The speed target relies purely on openpilot vision model and it may not always be accurate too.
 
-BMW E-series 2008-2013 have 3 vehicle options for cruise control:
-- VO540 **[supported]** - normal cruise control - managed by ECU and typical for 1-series, but can be relatively easily programmed to VO544 [using NCSExpert](https://www.1addicts.com/forums/showthread.php?t=1138536)
-- VO544 **[supported]**  - dynamic cruise control - managed by DSC and enables brake activation if speed target is far from actual speed. This option is often present in 3-series.
-- VO541 **[not supported]**  - active cruise control - BMW's radar solution - very rare option and reportedly, it had issues with going out of calibration. It probably would work with openpilot, but was not validated. Maybe it has different minimum speed limit?
+BMW E-series 2008-2013 have 3 vehicle options regarding the cruise control:
+- VO540 **[supported]** - normal cruise control - managed by ECU and typical for 1-series, but can be relatively easily programmed to VO544 on 6-cylinder cars[using NCSExpert](https://www.1addicts.com/forums/showthread.php?t=1138536)
+- VO544 **[supported]**  - dynamic cruise control (DCC) - managed by DSC and enables brake activation if speed target is far from actual speed. This option is often present in  3-series and all E92.
+- VO541 **[not supported]**  - active cruise control (ACC) - BMW's radar solution - very rare option and reportedly, it had issues with going out of calibration. It probably would work with openpilot, but was not validated. Maybe it has different minimum speed limit?
 
 Each cruise control option can operate in mph or kph (can be changed globally via vehicle setting or only for cruise using NCSExpert). Currently control units are [hardcoded](https://github.com/dzid26/openpilot-for-BMW-E8x-E9x/blob/master-ci/selfdrive/car/bmw/carstate.py#L110) to metric for better control resolution. TODO autodetection of cruise units.
 
-**In order for openpilot to be able to control vehicle speed, it needs to access ignition status, PT-CAN and F-CAN.** (F-CAN could be skipped for VO540, but currently control uses generalized solution with both buses).
+**In order for openpilot to be able to control vehicle speed, it needs to access ignition status, PT-CAN and F-CAN.** (F-CAN doesn't need to be connected with VO540)
+
+Connection requirement:
+| Car | **F_Can** | **PT_Can** |
+| ---- | -------- | ---------- |
+| E8x with DCC | Y | Y |
+| E8x without DCC | o | Y |
+| E9x with DCC| Y | Y |
+
 Refer to [opendbc-BMW](https://github.com/dzid26/opendbc-BMW-E8x-E9x) to explore and contribute to decoding of BMW CAN messages.
 
 
 DIY hardware onnections:
 
-| Wire      |  **Main** & secondary color | Panda  pin | Description                 | Splice location |
-| --------- | ------------------          | ---------  | ------------------          |------     |
-| PT_CAN_H  | **blue** &  red             | CAN2H      |powertrain CAN               |X10548     |
-| PT_CAN_L  | **red**                     | CAN2L      |powertrain CAN               |X10549     |
-| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN                   |X13722     |
-| F_CAN_L   |  **white** & blue           | CAN1L      |chasis CAN                   |X13723     |
-| KL_15     |  **green** & red            | IGN        |ignition indicator terminal  |X10550     |
+| Wire      |  **Main** & secondary color | Panda  pin | Description                 | Splice code |
+| --------- | ------------------          | ---------  | ------------------          |------       |
+| PT_CAN_H  | **blue** &  red             | CAN2H      |powertrain CAN               |X10548       |
+| PT_CAN_L  | **red**                     | CAN2L      |powertrain CAN               |X10549       |
+| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN                   |X13722       |
+| F_CAN_L   |  **white** & blue           | CAN1L      |chasis CAN                   |X13723       |
+| KL_15     |  **green** & red            | IGN        |ignition indicator terminal  |X10550       |
 
-[PT-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x8/x8091-x8091/Ck5ibwF8) and Ignition status are available as splices exposed within [big wire-loom](https://www.newtis.info/tisv2/a/en/e90-325i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x10550-x10550/SQCw5q4) in a corner above foot-rest.
-[F-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x14024-x14024/B5OUNoSj) is available as splices exposed in a [wire-loom](https://www.newtis.info/tisv2/a/en/e90-325i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x13723-x13723/RKITgwO)  under driver foot-well floor lining.
+[PT-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x8/x8091-x8091/Ck5ibwF8) and Ignition status are available as splices exposed within [big wire-loom](https://www.newtis.info/tisv2/a/en/e90-325i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x10550-x10550/SQCw5q4) in a corner above foot-rest plastic.
+[F-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x14024-x14024/B5OUNoSj) is available as splices exposed in a [wire-loom](https://www.e90post.com/forums/showpost.php?p=20414970&postcount=9) below front of the driver door frame (under foot-well floor lining).
 *(This is for LHD car. Verify CANbus placement for RHD)*
 
 
