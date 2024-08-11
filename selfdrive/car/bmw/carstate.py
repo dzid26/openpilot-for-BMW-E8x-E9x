@@ -1,8 +1,8 @@
 from cereal import car
 from opendbc.can.can_define import CANDefine
-from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
-from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.conversions import Conversions as CV
+from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.bmw.values import DBC, CanBus, BmwFlags
 from openpilot.common.params import Params
 

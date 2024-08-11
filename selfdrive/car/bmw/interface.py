@@ -5,6 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.bmw.values import CAR, CanBus, BmwFlags, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -34,6 +35,7 @@ def detect_stepper_override(steerCmd, steerAct, vEgo, centering_ceoff, SteerFric
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
+    self.VM = VehicleModel(CP)  # for the yawRate
 
     self.cp_F = self.CS.get_F_can_parser(CP)
     self.cp_aux = self.CS.get_actuator_can_parser(CP)
