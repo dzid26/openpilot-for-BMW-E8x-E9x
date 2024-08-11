@@ -38,9 +38,9 @@ class CarController(CarControllerBase):
 
     self.cruise_bus = CanBus.F_CAN
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
-      self.cruise_bus = CanBus.PT_CAN
-    else:
       self.cruise_bus = CanBus.F_CAN
+    else:
+      self.cruise_bus = CanBus.PT_CAN
 
     self.packer = CANPacker(dbc_name)
 
