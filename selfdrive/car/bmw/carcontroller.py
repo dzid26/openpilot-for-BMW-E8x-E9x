@@ -21,9 +21,8 @@ ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
-    self.CP = CP
+    super().__init__(dbc_name, CP, VM)
     self.flags = CP.flags
-    self.frame = 0
 
 
     self.braking = False
