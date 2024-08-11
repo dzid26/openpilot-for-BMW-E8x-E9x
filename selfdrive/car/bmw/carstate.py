@@ -159,6 +159,7 @@ class CarState(CarStateBase):
       ("CruiseControlStalk", 5),
       ("StatusDSC_KCAN", 50),
       ("Status_contact_handbrake", 0),
+      ("TerminalStatus", 10),
     ]
 
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
