@@ -98,7 +98,7 @@ class CarState(CarStateBase):
 
     ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
-    ret.cruiseState.nonAdaptive = True
+    ret.cruiseState.nonAdaptive = False # bmw does't have a switch
     if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL: #_DCC implies the F-CAN bus has to be connected
       ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
       ret.cruiseState.speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed']
