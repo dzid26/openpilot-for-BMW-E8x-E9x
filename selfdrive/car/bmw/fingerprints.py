@@ -8,7 +8,7 @@ BMW_E8x_E9x_common = {
 
 FINGERPRINTS = {
   CAR.BMW_E82:      [BMW_E8x_E9x_common],
-  CAR.BMW_E90:      [BMW_E8x_E9x_common],
+  # CAR.BMW_E90:      [BMW_E8x_E9x_common],
 }
 
 
