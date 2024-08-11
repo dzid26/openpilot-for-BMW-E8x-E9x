@@ -26,7 +26,7 @@ dependencies = [
   "pycapnp",
   "Cython",
   "setuptools",
-  "numpy < 2.0.0", # control does not support numpy 2
+  "numpy",
 
   # body / webrtcd
   "aiohttp",
@@ -61,16 +61,14 @@ dependencies = [
   "pycryptodome", # used in updated/casync, panda, body, and a test
 
   # logreader
-  "zstd",
+  "zstandard",
 ]
 
 [project.optional-dependencies]
 docs = [
   "Jinja2",
   "natsort",
-  "mkdocs==1.4.3",  # needed for mkdocs-plugin-commonmark
-  "mkdocs-terminal",
-  "mkdocs-plugin-commonmark",
+  "mkdocs",
 ]
 
 testing = [
@@ -96,14 +94,12 @@ dev = [
   "av",
   "azure-identity",
   "azure-storage-blob",
-  "control",
   "dictdiffer",
   "flaky",
   "inputs",
   "lru-dict",
   "matplotlib",
   "metadrive-simulator@git+https://github.com/commaai/metadrive@opencv_headless ; platform_machine != 'aarch64'",
-  "opencv-python-headless",
   "parameterized >=0.8, <0.9",
   #"pprofile",
   "pyautogui",
