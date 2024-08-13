@@ -31,6 +31,7 @@ Quick start: `bash <(curl -fsSL openpilot.comma.ai)`
 ---
 BMW integration
 ------
+Installer link: https://installer.comma.ai/dzid26/master
 This is development fork for openpilot integration specific to BMW E-series 2008-2013. (BMW E8x, E9x, maybe E60).
 (My car is E82 with added DCC and servotronic).
 
@@ -60,13 +61,20 @@ Refer to [opendbc-BMW](https://github.com/dzid26/opendbc-BMW-E8x-E9x) to explore
 
 DIY hardware onnections:
 
-| Wire      |  **Main** & secondary color | Panda  pin | Description                 | Splice code |
+| Wire      |  **Main** & secondary color | Harness pin | Description                | Acceess location code |
 | --------- | ------------------          | ---------  | ------------------          |------       |
-| PT_CAN_H  | **blue** &  red             | CAN2H      |powertrain CAN               |X10548       |
-| PT_CAN_L  | **red**                     | CAN2L      |powertrain CAN               |X10549       |
-| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN                   |X13722       |
+| PT_CAN_H  | **blue** &  red             | CAN0H      |powertrain CAN               |X10548       |
+| PT_CAN_L  | **red**                     | CAN0L      |powertrain CAN               |X10549       |
+| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN (see table above) |X13722       |
 | F_CAN_L   |  **white** & blue           | CAN1L      |chasis CAN                   |X13723       |
+| Optional: |                             |            |                             |             |
 | KL_15     |  **green** & red            | IGN        |ignition indicator terminal  |X10550       |
+| K_CAN_H   |  **orange** & green         | CAN2H      |body CAN (optional)          |             |
+| K_CAN_L   |  **green**                  | CAN2L      |body CAN (optional)          |             |
+| D_CAN_H   |  **white** & yellow         | CAN3H (obd)|diagnostic bus (optional)    | OBD2 pin 6  |
+| D_CAN_L   |  **white** & blue           | CAN3L (obd)|diagnostic bus (optional)    | OBD2 pin 14 |
+
+StepperServoCAN can connected instead of K-CAN or added to F-CAN network after desoldering 120 ohm termination resistor from the PCB.
 
 [PT-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x8/x8091-x8091/Ck5ibwF8) and Ignition status are available as splices exposed within [big wire-loom](https://www.newtis.info/tisv2/a/en/e90-325i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x10550-x10550/SQCw5q4) in a corner above foot-rest plastic.
 [F-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x14024-x14024/B5OUNoSj) is available as splices exposed in a [wire-loom](https://www.e90post.com/forums/showpost.php?p=20414970&postcount=9) below front of the driver door frame (under foot-well floor lining).
