@@ -67,8 +67,8 @@ def create_accel_command(packer, action: CruiseStalk, bus: int, frame):
         }
     values[action.value] = 1
 
-    dat = packer.make_can_msg("CruiseControl", bus, values)[1]
+    dat = packer.make_can_msg("CruiseControlStalk", bus, values)[1]
     values["Checksum_404"] = calc_checksum_cruise(dat)
 
-    return packer.make_can_msg("CruiseControl", bus, values)
+    return packer.make_can_msg("CruiseControlStalk", bus, values)
 
