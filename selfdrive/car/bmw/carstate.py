@@ -99,11 +99,14 @@ class CarState(CarStateBase):
     ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
     ret.cruiseState.nonAdaptive = False # bmw does't have a switch
-    if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL: #_DCC implies the F-CAN bus has to be connected
+
+    cruiseState_speed = 0
+    if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
       ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
-      ret.cruiseState.speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed']
+      cruiseState_speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed']
       ret.cruiseState.enabled = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseActive'] != 0
-      # if we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
+      # DCC implies that cruise control is done on F-CAN
+      # If we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
       self.cruise_plus = cp_F.vl["CruiseControlStalk"]['plus1'] != 0
       self.cruise_minus = cp_F.vl["CruiseControlStalk"]['minus1'] != 0
       self.cruise_plus5 = cp_F.vl["CruiseControlStalk"]['plus5'] != 0
@@ -113,7 +116,7 @@ class CarState(CarStateBase):
       self.cruise_cancelUpStalk = cp_F.vl["CruiseControlStalk"]['cancel_lever_up'] != 0
     elif self.CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
       ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
-      ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed']
+      cruiseState_speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed']
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
       self.cruise_plus = cp_PT.vl["CruiseControlStalk"]['plus1'] != 0
       self.cruise_minus = cp_PT.vl["CruiseControlStalk"]['minus1'] != 0
@@ -133,9 +136,9 @@ class CarState(CarStateBase):
     #     self.is_metric = False
 
     if self.is_metric: #recalculate to the right unit
-      ret.cruiseState.speed = ret.cruiseState.speed * CV.KPH_TO_MS
+      ret.cruiseState.speed = cruiseState_speed * CV.KPH_TO_MS
     else:
-      ret.cruiseState.speed = ret.cruiseState.speed * CV.MPH_TO_MS
+      ret.cruiseState.speed = cruiseState_speed * CV.MPH_TO_MS
 
     ret.genericToggle = self.sportMode
 
