@@ -38,7 +38,9 @@ class CarInterface(CarInterfaceBase):
     self.VM = VehicleModel(CP)  # for the yawRate
 
     self.cp_F = self.CS.get_F_can_parser(CP)
+    self.can_parsers.append(self.cp_F)
     self.cp_aux = self.CS.get_actuator_can_parser(CP)
+    self.can_parsers.append(self.cp_aux)
 
     self.enabled = False
     self.gas_pressed_prev3 = False
@@ -133,7 +135,6 @@ class CarInterface(CarInterfaceBase):
   def _update(self, c):
     # ******************* do can recv *******************
     ret = self.CS.update(self.cp, self.cp_F, self.cp_aux)
-    ret.canValid = self.cp.can_valid and self.cp_F.can_valid and self.cp_aux.can_valid
 
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo, 0) # todo use canbus signal
 
