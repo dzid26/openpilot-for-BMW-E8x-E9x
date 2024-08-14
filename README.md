@@ -63,14 +63,14 @@ DIY hardware onnections:
 
 | Wire      |  **Main** & secondary color | Harness pin | Description                | Acceess location code |
 | --------- | ------------------          | ---------  | ------------------          |------       |
-| PT_CAN_H  | **blue** &  red             | CAN0H      |powertrain CAN               |X10548       |
-| PT_CAN_L  | **red**                     | CAN0L      |powertrain CAN               |X10549       |
-| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN (see table above) |X13722       |
-| F_CAN_L   |  **white** & blue           | CAN1L      |chasis CAN                   |X13723       |
+| PT_CAN_H  | **blue** &  red             | CAN0H      |powertrain CAN               |   X10548    |
+| PT_CAN_L  | **red**                     | CAN0L      |powertrain CAN               |   X10549    |
+| F_CAN_H   |  **white** & yellow         | CAN1H      |chasis CAN (see table above) |   X13722    |
+| F_CAN_L   |  **white** & blue           | CAN1L      |chasis CAN                   |   X13723    |
 | Optional: |                             |            |                             |             |
-| KL_15     |  **green** & red            | IGN        |ignition indicator terminal  |X10550       |
-| K_CAN_H   |  **orange** & green         | CAN2H      |body CAN (optional)          |             |
-| K_CAN_L   |  **green**                  | CAN2L      |body CAN (optional)          |             |
+| KL_15     |  **green** & red            | IGN        |ignition indicator terminal  |   X10550    |
+| K_CAN_H   |  **orange** & green         | CAN2H      |body CAN (optional)          |   X15003    |
+| K_CAN_L   |  **green**                  | CAN2L      |body CAN (optional)          |   X15004    |
 | D_CAN_H   |  **white** & yellow         | CAN3H (obd)|diagnostic bus (optional)    | OBD2 pin 6  |
 | D_CAN_L   |  **white** & blue           | CAN3L (obd)|diagnostic bus (optional)    | OBD2 pin 14 |
 
