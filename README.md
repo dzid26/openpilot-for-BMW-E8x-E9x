@@ -35,7 +35,7 @@ Installer link: https://installer.comma.ai/dzid26/master
 This is development fork for openpilot integration specific to BMW E-series 2008-2013. (BMW E8x, E9x, maybe E60).
 (My car is E82 with added DCC and servotronic).
 
-- **Lateral control** is optional and supported via external streering actuator based on [StepperServoCAN](https://github.com/dzid26/StepperServoCAN).
+- **Lateral control** is optional and supported via external streering actuator based on [STEPPER_SERVO_CAN](https://github.com/dzid26/StepperServoCAN).
 - **Longitudinal control** is supported via injecting cruise control +/- stalk commands.
 Since it uses cruise control CAN bus requests to adjust speed it inherits limitation of the stock cruise control, such as minimum 20mph engagement speed and acceelration rates.
 The speed target relies purely on openpilot vision model and it may not always be accurate too.
@@ -74,7 +74,7 @@ DIY hardware onnections:
 | D_CAN_H   |  **white** & yellow         | CAN3H (obd)|diagnostic bus (optional)    | OBD2 pin 6  |
 | D_CAN_L   |  **white** & blue           | CAN3L (obd)|diagnostic bus (optional)    | OBD2 pin 14 |
 
-StepperServoCAN can connected instead of K-CAN or added to F-CAN network after desoldering 120 ohm termination resistor from the PCB.
+STEPPER_SERVO_CAN can be connected instead of K-CAN or added to F-CAN network after desoldering 120 ohm termination resistor from the PCB.
 
 [PT-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x8/x8091-x8091/Ck5ibwF8) and Ignition status are available as splices exposed within [big wire-loom](https://www.newtis.info/tisv2/a/en/e90-325i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x10550-x10550/SQCw5q4) in a corner above foot-rest plastic.
 [F-CAN](https://www.newtis.info/tisv2/a/en/e90-335i-lim/components-connectors/plug-in-comb-type-solder-connectors/connectors-from-x1/x14024-x14024/B5OUNoSj) is available as splices exposed in a [wire-loom](https://www.e90post.com/forums/showpost.php?p=20414970&postcount=9) below front of the driver door frame (under foot-well floor lining).

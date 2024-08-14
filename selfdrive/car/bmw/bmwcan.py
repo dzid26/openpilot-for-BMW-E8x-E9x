@@ -17,6 +17,7 @@ class CruiseStalk(Enum):
   resume = "resume"
   cancel_lever_up = "cancel_lever_up"
 
+# *** StepperServoCAN ***
 def create_steer_command(frame: int, mode: SteeringModes, steer_tq: float = 0, steer_delta: float = 0):
     """Creates a CAN message for the actuator STEERING_COMMAND"""
     packer = CANPacker('ocelot_controls')
@@ -31,7 +32,7 @@ def create_steer_command(frame: int, mode: SteeringModes, steer_tq: float = 0, s
     dat  = msg[1]
     values["CHECKSUM"] = calc_checksum_8bit(dat, addr)
 
-    return packer.make_can_msg("STEERING_COMMAND", CanBus.ALT, values)
+    return packer.make_can_msg("STEERING_COMMAND", CanBus.AUX, values)
 
 
 def calc_checksum_4bit(work_data: bytearray, msg_id: int): # 0x130

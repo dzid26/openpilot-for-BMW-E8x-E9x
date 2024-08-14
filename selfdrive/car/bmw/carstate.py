@@ -142,8 +142,9 @@ class CarState(CarStateBase):
 
     ret.genericToggle = self.sportMode
 
-    ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
-    self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
+    if self.CP.flags & BmwFlags.STEPPER_SERVO_CAN:
+      ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
+      self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
 
     self.prev_gasPressed = ret.gasPressed
     return ret
@@ -186,7 +187,10 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_actuator_can_parser(CP):
-    messages = [ # refresh frequency Hz
-    ("STEERING_STATUS", 100),
-    ]
-    return CANParser('ocelot_controls', messages, CanBus.ALT)  # 2: Actuator-CAN,
+    if CP.flags & BmwFlags.STEPPER_SERVO_CAN:
+      messages = [ # refresh frequency Hz
+      ("STEERING_STATUS", 100),
+      ]
+    else:
+      messages = []
+    return CANParser('ocelot_controls', messages, CanBus.AUX)

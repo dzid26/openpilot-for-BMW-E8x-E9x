@@ -113,26 +113,27 @@ class CarController(CarControllerBase):
 
     self.cruise_speed_prev = CS.out.cruiseState.speed
 
-    # *** apply steering torque ***
-    apply_steer = 0
-    if CC.enabled:
-      new_steer = actuators.steer * CarControllerParams.STEER_MAX
-      # explicitly clip torque before sending on CAN
-      apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
+    if self.flags & BmwFlags.STEPPER_SERVO_CAN:
+      # *** apply steering torque ***
+      apply_steer = 0
+      if CC.enabled:
+        new_steer = actuators.steer * CarControllerParams.STEER_MAX
+        # explicitly clip torque before sending on CAN
+        apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
 
-      can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
-      # *** control msgs ***
-      if (self.frame % 10) == 0: #slow print
-        brake_torque = actuators.accel
-        frame_number = self.frame
-        print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
-    elif (not CC.enabled and self.last_controls_enabled):  # cancel on falling edge
-      can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
+        can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
+        # *** control msgs ***
+        if (self.frame % 10) == 0: #slow print
+          brake_torque = actuators.accel
+          frame_number = self.frame
+          print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
+      elif (not CC.enabled and self.last_controls_enabled):  # cancel on falling edge
+        can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
 
+      self.apply_steer_last = apply_steer
+      self.last_controls_enabled = CC.enabled
 
-    self.apply_steer_last = apply_steer
     # self.last_accel = apply_accel
-    self.last_controls_enabled = CC.enabled
 
 
     new_actuators = actuators.as_builder()

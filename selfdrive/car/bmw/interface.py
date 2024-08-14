@@ -71,6 +71,9 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs):
+    if 0x22F in fingerprint[CanBus.AUX]:   # Enigne controls speed and reports cruise control status
+      ret.flags |= BmwFlags.STEPPER_SERVO_CAN.value
+
     if 0x200 in fingerprint[CanBus.PT_CAN]:   # Enigne controls speed and reports cruise control status
       ret.flags |= BmwFlags.NORMAL_CRUISE_CONTROL.value
     if 0x193 in fingerprint[CanBus.PT_CAN]:   # either DSC or LDM reports cruise control status

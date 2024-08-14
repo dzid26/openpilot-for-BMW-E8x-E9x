@@ -27,7 +27,7 @@ class BmwFlags(IntFlag):
 class CanBus:
   PT_CAN = 2
   F_CAN = 0
-  ALT = 1 # StepperServoCAN
+  AUX = 1 # STEPPER_SERVO_CAN
 
 
 @dataclass
