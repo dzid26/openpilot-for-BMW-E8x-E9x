@@ -45,8 +45,6 @@ class CarInterface(CarInterfaceBase):
     self.enabled = False
     self.gas_pressed_prev3 = False
     self.gas_pressed_prev2 = False
-    self.steeringAngle_prev = 0. # it's ok for first sample to be wrong
-    self.steeringActuatorEnabled_prev = False
 
   @staticmethod
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
@@ -213,11 +211,7 @@ class CarInterface(CarInterfaceBase):
     # if self.CS.gas_kickdown:
     #   events.add(EventName.pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
-    steeringActuatorEnabled = self.enabled and not self.CS.sportMode  # todo leave for now for a easy way to disable steering actuator
-    self.steeringActuatorEnabled_prev = steeringActuatorEnabled
-
     # update previous brake/gas pressed
-    self.steeringAngle_prev = ret.steeringAngleDeg
     self.gas_pressed_prev = ret.gasPressed
     self.gas_pressed_prev2 = self.gas_pressed_prev
     self.gas_pressed_prev3 = self.gas_pressed_prev2

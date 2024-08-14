@@ -116,7 +116,7 @@ class CarController(CarControllerBase):
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
       # *** apply steering torque ***
       apply_steer = 0
-      if CC.enabled:
+      if CC.enabled and not CS.sportMode:
         new_steer = actuators.steer * CarControllerParams.STEER_MAX
         # explicitly clip torque before sending on CAN
         apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
