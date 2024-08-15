@@ -74,14 +74,18 @@ class CarInterface(CarInterfaceBase):
 
     if 0x200 in fingerprint[CanBus.PT_CAN]:   # Enigne controls speed and reports cruise control status
       ret.flags |= BmwFlags.NORMAL_CRUISE_CONTROL.value
+      ret.pcmCruise = True
     if 0x193 in fingerprint[CanBus.PT_CAN]:   # either DSC or LDM reports cruise control status
       if 0x0D5 in fingerprint[CanBus.PT_CAN]: # LDM sends brake commands
         ret.flags |= BmwFlags.ACTIVE_CRUISE_CONTROL_LDM.value
+        ret.pcmCruise = True
       else:                                   # DSC itself applies brakes
         ret.flags |= BmwFlags.DYNAMIC_CRUISE_CONTROL.value
+        ret.pcmCruise = True
     if 0x0B7 in fingerprint[CanBus.PT_CAN]:   # LDM not present, other modules don't send torque requests - openpilot will be the requester
       ret.flags |= BmwFlags.ACTIVE_CRUISE_CONTROL_NO_LDM.value
-      if candidate in [CAR.BMW_E82]: # todo: this is not legit but my car has retrofitted M3 steering rack - needs firmware query
+      ret.pcmCruise = False
+      if candidate in [CAR.BMW_E82]: # todo: this is not legit but my car has M3 steering rack - needs vehicle option firmware query
         ret.flags |= BmwFlags.SERVOTRONIC.value
         ret.steerRatio = 12.5
 
