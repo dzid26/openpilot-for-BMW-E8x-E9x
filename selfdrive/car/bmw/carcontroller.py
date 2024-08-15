@@ -66,14 +66,14 @@ class CarController(CarControllerBase):
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
 
     # hysteresis
-    speed_diff_req = (self.calcDesiredSpeed - CS.out.cruiseState.speed) * CV.KPH_TO_MS if CS.is_metric else CV.MPH_TO_MS
+    speed_diff_req = (self.calcDesiredSpeed - CS.out.cruiseState.speed) * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
     speed_margin_thresh = 0.1
     hysteresis_timeout = 0.2
     # hysteresis, cruiseState.speed changes in steps
     if self.last_accel_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
-      speed_diff_err_up =   speed_margin_thresh
+      speed_diff_err_up = speed_margin_thresh
       speed_diff_err_dn =  -CC_STEP
-    elif self.last_accel_req < 0 and actuators.accel < 0.2 and  time_since_cruise_sent < hysteresis_timeout:
+    elif self.last_accel_req < 0 and actuators.accel < 0.2 and time_since_cruise_sent < hysteresis_timeout:
       speed_diff_err_up =  CC_STEP
       speed_diff_err_dn = -speed_margin_thresh
     else:
