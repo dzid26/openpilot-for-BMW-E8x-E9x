@@ -32,7 +32,7 @@ def create_steer_command(frame: int, mode: SteeringModes, steer_tq: float = 0, s
     dat  = msg[1]
     values["CHECKSUM"] = calc_checksum_8bit(dat, addr)
 
-    return packer.make_can_msg("STEERING_COMMAND", CanBus.AUX, values)
+    return packer.make_can_msg("STEERING_COMMAND", CanBus.SERVO_CAN, values)
 
 
 def calc_checksum_4bit(work_data: bytearray, msg_id: int): # 0x130

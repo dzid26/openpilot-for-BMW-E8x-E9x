@@ -193,4 +193,4 @@ class CarState(CarStateBase):
       ]
     else:
       messages = []
-    return CANParser('ocelot_controls', messages, CanBus.AUX)
+    return CANParser('ocelot_controls', messages, CanBus.SERVO_CAN)
