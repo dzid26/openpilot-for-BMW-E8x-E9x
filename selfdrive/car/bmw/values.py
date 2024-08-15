@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-
 from enum import IntFlag
 from openpilot.selfdrive.car import Platforms, CarSpecs, CarDocs, PlatformConfig, dbc_dict, DbcDict, STD_CARGO_KG
 from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
 # Steer torque limits
 class CarControllerParams: #controls running @ 100hz
@@ -25,8 +25,8 @@ class BmwFlags(IntFlag):
   SERVOTRONIC = 2 ** 5                    # ServoTonic $216A - TODO: needs firmware query
 
 class CanBus:
-  PT_CAN = 2
-  F_CAN = 0
+  PT_CAN = 0
+  F_CAN = 1
   AUX = 1 # STEPPER_SERVO_CAN
 
 
