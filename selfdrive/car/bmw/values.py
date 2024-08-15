@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import IntFlag
 from openpilot.selfdrive.car import Platforms, CarSpecs, CarDocs, PlatformConfig, dbc_dict, DbcDict, STD_CARGO_KG
-from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.conversions import Conversions as CV
 
 # Steer torque limits
 class CarControllerParams: #controls running @ 100hz

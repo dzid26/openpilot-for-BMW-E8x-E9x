@@ -61,7 +61,7 @@ Refer to [opendbc-BMW](https://github.com/dzid26/opendbc-BMW-E8x-E9x) to explore
 
 DIY hardware onnections:
 
-| Wire      |  **Main** & secondary color | Harness pin | Description                | Acceess location code |
+| Wire      |  **Main** & secondary color | Harness pin | Description                | Access location code |
 | --------- | ------------------          | ---------  | ------------------          |------       |
 | PT_CAN_H  | **blue** &  red             | CAN0H      |powertrain CAN               |   X10548    |
 | PT_CAN_L  | **red**                     | CAN0L      |powertrain CAN               |   X10549    |

@@ -98,7 +98,7 @@ class CarState(CarStateBase):
 
     ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
-    ret.cruiseState.nonAdaptive = False # bmw does't have a switch
+    ret.cruiseState.nonAdaptive = False # bmw doesn't have a switch
 
     cruiseState_speed = 0
     if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:

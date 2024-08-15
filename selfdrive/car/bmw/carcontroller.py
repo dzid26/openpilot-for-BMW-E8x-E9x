@@ -5,7 +5,7 @@ from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
 from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from opendbc.can.packer import CANPacker
-from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
