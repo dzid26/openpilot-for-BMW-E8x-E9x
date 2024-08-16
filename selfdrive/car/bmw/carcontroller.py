@@ -34,7 +34,6 @@ class CarController(CarControllerBase):
     self.last_accel_req = 0
     self.cruise_speed_prev = 0
     self.calcDesiredSpeed = 0
-    self.target_speed = 0
     self.cruise_counter = 0
     self.stock_cruise_counter_last = -1
 
@@ -109,19 +108,16 @@ class CarController(CarControllerBase):
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.resume, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = accel
-      self.target_speed = CS.out.cruiseState.speed + 1
     elif speed_diff_req > speed_diff_err_up and CC.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = accel
-      self.target_speed = CS.out.cruiseState.speed + 1
     elif speed_diff_req < speed_diff_err_dn and CC.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = -accel
-      self.target_speed = CS.out.cruiseState.speed - 1
 
     self.cruise_speed_prev = CS.out.cruiseState.speed
 
@@ -145,15 +141,12 @@ class CarController(CarControllerBase):
       self.apply_steer_last = apply_steer
       self.last_controls_enabled = CC.enabled
 
-    # self.last_accel = apply_accel
-
-
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
 
     new_actuators.accel = self.last_accel_req
-    new_actuators.speed = self.target_speed
+    new_actuators.speed = self.calcDesiredSpeed
 
     self.frame += 1
     return new_actuators, can_sends
