@@ -72,19 +72,21 @@ class CarInterface(CarInterfaceBase):
     if 0x22F in fingerprint[CanBus.SERVO_CAN]:   # Enigne controls speed and reports cruise control status
       ret.flags |= BmwFlags.STEPPER_SERVO_CAN.value
 
+    ret.openpilotLongitudinalControl = True
+    ret.pcmCruise = False # use OP speed tracking because we control speed using stock cruise speed setpoint or stock cruise is disabled
+
     if 0x200 in fingerprint[CanBus.PT_CAN]:   # Enigne controls speed and reports cruise control status
       ret.flags |= BmwFlags.NORMAL_CRUISE_CONTROL.value
-      ret.pcmCruise = True
+      ret.autoResumeSng = False
     if 0x193 in fingerprint[CanBus.PT_CAN]:   # either DSC or LDM reports cruise control status
+      ret.autoResumeSng = False
       if 0x0D5 in fingerprint[CanBus.PT_CAN]: # LDM sends brake commands
         ret.flags |= BmwFlags.ACTIVE_CRUISE_CONTROL_LDM.value
-        ret.pcmCruise = True
       else:                                   # DSC itself applies brakes
         ret.flags |= BmwFlags.DYNAMIC_CRUISE_CONTROL.value
-        ret.pcmCruise = True
-    if 0x0B7 in fingerprint[CanBus.PT_CAN]:   # LDM not present, other modules don't send torque requests - openpilot will be the requester
+    if 0x0B7 in fingerprint[CanBus.PT_CAN]:   # LDM not used, other modules don't send torque requests - openpilot will be the requester
       ret.flags |= BmwFlags.ACTIVE_CRUISE_CONTROL_NO_LDM.value
-      ret.pcmCruise = False
+      ret.autoResumeSng = True #! hopefully
       if candidate in [CAR.BMW_E82]: # todo: this is not legit but my car has M3 steering rack - needs vehicle option firmware query
         ret.flags |= BmwFlags.SERVOTRONIC.value
         ret.steerRatio = 12.5
@@ -119,7 +121,6 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kiV = [0.0 / CarControllerParams.STEER_MAX, 0.0 / CarControllerParams.STEER_MAX]
     ret.lateralTuning.pid.kf =   1.0 / CarControllerParams.STEER_MAX # get_steer_feedforward_function
 
-    ret.openpilotLongitudinalControl = True
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [.1]
     ret.longitudinalTuning.kiBP = [0.]
