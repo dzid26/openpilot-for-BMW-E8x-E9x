@@ -80,15 +80,14 @@ class CarController(CarControllerBase):
       speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
       speed_diff_err_dn = -CC_STEP / 2
 
-    cruise_tick = 0.2 # default rate
-    accel = 1
-    if abs(actuators.accel) > 1 and abs(speed_diff_req)>1:
-      cruise_tick = 0.1   #-1 no delay - emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
+    # *** stalk press rate ***
+    if (actuators.accel < 0.2 or actuators.accel > 0.4) and abs(speed_diff_req) > CC_STEP * 1.5:
+      # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
+      cruise_tick = 0.05   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
       accel = 2
-    # elif round(abs(speed_diff_req)) == 1:
-    #   self.last_frame_cruise_cmd_sent = self.frame #reset counter
-    #   cruise_tick = 0.35 #slow period
-
+    else:
+      cruise_tick = 0.2 # default rate when not holding stalk
+      accel = 1
 
     if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.frame))
