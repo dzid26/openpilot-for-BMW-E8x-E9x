@@ -100,45 +100,37 @@ class CarState(CarStateBase):
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
     ret.cruiseState.nonAdaptive = False # bmw doesn't have a switch
 
-    cruiseState_speed = 0
-    if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
-      ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
-      cruiseState_speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed']
-      ret.cruiseState.enabled = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseActive'] != 0
-      # DCC implies that cruise control is done on F-CAN
-      # If we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
-      self.cruise_plus = cp_F.vl["CruiseControlStalk"]['plus1'] != 0
-      self.cruise_minus = cp_F.vl["CruiseControlStalk"]['minus1'] != 0
-      self.cruise_plus5 = cp_F.vl["CruiseControlStalk"]['plus5'] != 0
-      self.cruise_minus5 = cp_F.vl["CruiseControlStalk"]['minus5'] != 0
-      self.cruise_resume = cp_F.vl["CruiseControlStalk"]['resume'] != 0
-      self.cruise_cancel = cp_F.vl["CruiseControlStalk"]['cancel'] != 0
-      self.cruise_cancelUpStalk = cp_F.vl["CruiseControlStalk"]['cancel_lever_up'] != 0
-    elif self.CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
-      ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
-      cruiseState_speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed']
-      ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
-      self.cruise_plus = cp_PT.vl["CruiseControlStalk"]['plus1'] != 0
-      self.cruise_minus = cp_PT.vl["CruiseControlStalk"]['minus1'] != 0
-      self.cruise_plus5 = cp_PT.vl["CruiseControlStalk"]['plus5'] != 0
-      self.cruise_minus5 = cp_PT.vl["CruiseControlStalk"]['minus5'] != 0
-      self.cruise_resume = cp_PT.vl["CruiseControlStalk"]['resume'] != 0
-      self.cruise_cancel = cp_PT.vl["CruiseControlStalk"]['cancel'] != 0
-      self.cruise_cancelUpStalk = cp_PT.vl["CruiseControlStalk"]['cancel_lever_up'] != 0
-
-    self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
-
-    # *** determine is_metric based speed target vs actual speed ***
+    # todo # *** determine is_metric based speed target vs actual speed ***
     # if ret.cruiseState.enabled:
     #   if abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_KPH) < 0.3:
     #     self.is_metric = True
     #   elif abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_MPH) < 0.3:
     #     self.is_metric = False
 
-    if self.is_metric: #recalculate to the right unit
-      ret.cruiseState.speed = cruiseState_speed * CV.KPH_TO_MS
-    else:
-      ret.cruiseState.speed = cruiseState_speed * CV.MPH_TO_MS
+    cruiseControlStalkMsg = cp_PT.vl["CruiseControlStalk"]
+    if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
+      ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
+      ret.cruiseState.speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+      ret.cruiseState.enabled = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseActive'] != 0
+      # DCC implies that cruise control is done on F-CAN
+      # If we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
+      cruiseControlStalkMsg = cp_F.vl["CruiseControlStalk"]
+    elif self.CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
+      ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
+      ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+      ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
+
+    self.cruise_plus = cruiseControlStalkMsg['plus1'] != 0
+    self.cruise_minus = cruiseControlStalkMsg['minus1'] != 0
+    self.cruise_plus5 = cruiseControlStalkMsg['plus5'] != 0
+    self.cruise_minus5 = cruiseControlStalkMsg['minus5'] != 0
+    self.cruise_resume = cruiseControlStalkMsg['resume'] != 0
+    self.cruise_cancel = cruiseControlStalkMsg['cancel'] != 0
+    self.cruise_cancelUpStalk = cruiseControlStalkMsg['cancel_lever_up'] != 0
+    self.cruise_counter = cruiseControlStalkMsg['Counter_404'] != 0
+
+    self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
+
 
     ret.genericToggle = self.sportMode
 

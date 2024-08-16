@@ -35,6 +35,8 @@ class CarController(CarControllerBase):
     self.cruise_speed_prev = 0
     self.calcDesiredSpeed = 0
     self.target_speed = 0
+    self.cruise_counter = 0
+    self.stock_cruise_counter_last = -1
 
     self.cruise_bus = CanBus.F_CAN
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
@@ -53,12 +55,13 @@ class CarController(CarControllerBase):
     if (self.cruise_speed_prev - CS.out.cruiseState.speed) != 0:
       self.last_accel_req = self.cruise_speed_prev - CS.out.cruiseState.speed
 
-      # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
-      #it was probably driver pressing stalks. In that case update the timestamp too
-      if (self.frame - self.last_frame_cruise_cmd_sent) * DT_CTRL > (DT_CTRL * 1.5): #ignore if cruiseState.speed changed shortly after sending command
-        self.last_frame_cruise_cmd_sent = self.frame
+    frames_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent)
+    # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
+    # it was probably driver pressing stalks. In that case update the timestamp too
+    if frames_since_cruise_sent > 1.5: # ignore if cruiseState.speed changed shortly after sending command
+      self.last_frame_cruise_cmd_sent = self.frame
 
-    time_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent) * DT_CTRL
+    time_since_cruise_sent = frames_since_cruise_sent * DT_CTRL
 
     # *** desired speed model ***
     if abs(actuators.accel) < 0.1:
@@ -89,23 +92,33 @@ class CarController(CarControllerBase):
       cruise_tick = 0.2 # default rate when not holding stalk
       accel = 1
 
+    # *** cruise control counter handling ***
+    # detect stock CruiseControlStalk message counter change - message arrives at only 5Hz when idle
+    if self.stock_cruise_counter_last != CS.cruise_counter:
+      self.cruise_counter = CS.cruise_counter
+    self.stock_cruise_counter_last = CS.cruise_counter
+
     if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.frame))
+      self.cruise_counter = self.cruise_counter + 1
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = 0
       print("cancel")
     elif CC.cruiseControl.resume and time_since_cruise_sent > cruise_tick:
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.resume, self.cruise_bus, self.frame))
+      self.cruise_counter = self.cruise_counter + 1
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.resume, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = accel
       self.target_speed = CS.out.cruiseState.speed + 1
     elif speed_diff_req > speed_diff_err_up and CC.enabled and time_since_cruise_sent > cruise_tick:
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.frame))
+      self.cruise_counter = self.cruise_counter + 1
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = accel
       self.target_speed = CS.out.cruiseState.speed + 1
     elif speed_diff_req < speed_diff_err_dn and CC.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.frame))
+      self.cruise_counter = self.cruise_counter + 1
+      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
       self.last_accel_req = -accel
       self.target_speed = CS.out.cruiseState.speed - 1
