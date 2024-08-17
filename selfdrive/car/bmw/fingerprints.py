@@ -1,3 +1,4 @@
+from cereal import car
 from openpilot.selfdrive.car.bmw.values import CAR
 
 BMW_E8x_E9x_common_per_bus = {
@@ -24,4 +25,19 @@ FINGERPRINTS = {
     {**BMW_E8x_E9x_common, 899: 2}, # N52 has shorter msg id 899
     ]
   # CAR.BMW_E90:      [{**BMW_E8x_E9x_common, }],
+}
+
+Ecu = car.CarParams.Ecu
+
+FW_VERSIONS = {
+  CAR.BMW_E82: {
+    (Ecu.engine, 0x6F1, None): [
+      b'0.0.01',
+    ],
+  },
+  CAR.BMW_E90: {
+    (Ecu.engine, 0x6F1, None): [
+      b'0.0.01',
+    ],
+  },
 }

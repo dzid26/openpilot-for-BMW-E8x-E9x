@@ -25,8 +25,6 @@ non_tested_cars = [
   HONDA.HONDA_ODYSSEY_CHN,
   VOLKSWAGEN.VOLKSWAGEN_CRAFTER_MK2,  # need a route from an ACC-equipped Crafter
   SUBARU.SUBARU_FORESTER_HYBRID,
-  BMW.BMW_E90,
-  BMW.BMW_E82,
 ]
 
 
@@ -38,6 +36,9 @@ class CarTestRoute(NamedTuple):
 
 routes = [
   CarTestRoute("efdf9af95e71cd84|2022-05-13--19-03-31", COMMA.COMMA_BODY),
+
+  CarTestRoute("bd80d0fca0a57ddf/000000b9--cae114045b", BMW.BMW_E82),
+  CarTestRoute("01137e7011461a61/0000000e--9cdabc0dfc/00000000--6b2c49bfae", BMW.BMW_E90),
 
   CarTestRoute("0c94aa1e1296d7c6|2021-05-05--19-48-37", CHRYSLER.JEEP_GRAND_CHEROKEE),
   CarTestRoute("91dfedae61d7bd75|2021-05-22--20-07-52", CHRYSLER.JEEP_GRAND_CHEROKEE_2019),

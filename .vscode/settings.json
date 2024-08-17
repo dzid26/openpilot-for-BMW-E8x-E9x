@@ -6,22 +6,21 @@
   "search.exclude": {
     "**/.git": true,
     "**/.venv": true,
-    "**/__pycache__": true
+    "**/__pycache__": true,
+    "openpilot/**": true
   },
   "files.exclude": {
     "**/.git": true,
     "**/.venv": true,
-    "**/__pycache__": true
+    "**/__pycache__": true,
   },
   "python.analysis.exclude": [
     "**/.git",
     "**/.venv",
     "**/__pycache__",
     // exclude directories that should be using the symlinked version
-    "common/**",
-    "selfdrive/**",
-    "system/**",
-    "third_party/**",
-    "tools/**",
-  ]
+    "openpilot/**",
+  ],
+  "python.analysis.autoImportCompletions": false,
+  "search.followSymlinks": false
 }
