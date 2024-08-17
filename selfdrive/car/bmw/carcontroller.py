@@ -31,7 +31,7 @@ class CarController(CarControllerBase):
     self.apply_steer_last = 0
     self.accel_steady = 0.
     self.last_frame_cruise_cmd_sent = 0
-    self.last_accel_req = 0
+    self.last_cruise_speed_delta_req = 0
     self.cruise_speed_prev = 0
     self.calcDesiredSpeed = 0
     self.cruise_counter = 0
@@ -47,39 +47,11 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     can_sends = []
 
-    # detect check driver pressing as well
-    # check whether speed changed in the direction that was commanded - covers OP and driver's commands
-    if (self.cruise_speed_prev - CS.out.cruiseState.speed) != 0:
-      self.last_accel_req = self.cruise_speed_prev - CS.out.cruiseState.speed
-
-    frames_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent)
-    # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
-    # it was probably driver pressing stalks. In that case update the timestamp too
-    if frames_since_cruise_sent > 1.5: # ignore if cruiseState.speed changed shortly after sending command
-      self.last_frame_cruise_cmd_sent = self.frame
-
-    time_since_cruise_sent = frames_since_cruise_sent * DT_CTRL
-
     # *** desired speed model ***
     if abs(actuators.accel) < 0.1:
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
-
-    # hysteresis
     speed_diff_req = (self.calcDesiredSpeed - CS.out.cruiseState.speed) * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
-    speed_margin_thresh = 0.1
-    hysteresis_timeout = 0.2
-    # hysteresis, cruiseState.speed changes in steps
-    if self.last_accel_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
-      speed_diff_err_up = speed_margin_thresh
-      speed_diff_err_dn =  -CC_STEP
-    elif self.last_accel_req < 0 and actuators.accel < 0.2 and time_since_cruise_sent < hysteresis_timeout:
-      speed_diff_err_up =  CC_STEP
-      speed_diff_err_dn = -speed_margin_thresh
-    else:
-      speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
-      speed_diff_err_dn = -CC_STEP / 2
-
     # *** stalk press rate ***
     if (actuators.accel < 0.2 or actuators.accel > 0.4) and abs(speed_diff_req) > CC_STEP * 1.5:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
@@ -95,27 +67,49 @@ class CarController(CarControllerBase):
       self.cruise_counter = CS.cruise_counter
     self.stock_cruise_counter_last = CS.cruise_counter
 
+    # check if cruise speed actually changed - this covers changes due to OP and driver's commands
+    cruise_speed_delta = self.cruise_speed_prev - CS.out.cruiseState.speed
+    if (cruise_speed_delta) != 0:
+      self.last_cruise_speed_delta_req = cruise_speed_delta
+
+
+    frames_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent)
+    # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
+    # it was probably driver pressing stalks. In that case update the timestamp too
+    if frames_since_cruise_sent > 1.5: # ignore if cruiseState.speed changed shortly after sending command
+      self.last_frame_cruise_cmd_sent = self.frame
+
+    time_since_cruise_sent = frames_since_cruise_sent * DT_CTRL
+    # hysteresis
+    speed_margin_thresh = 0.1
+    hysteresis_timeout = 0.2
+    # hysteresis, cruiseState.speed changes in steps
+    if self.last_cruise_speed_delta_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
+      speed_diff_err_up = speed_margin_thresh
+      speed_diff_err_dn =  -CC_STEP
+    elif self.last_cruise_speed_delta_req < 0 and actuators.accel < 0.2 and time_since_cruise_sent < hysteresis_timeout:
+      speed_diff_err_up =  CC_STEP
+      speed_diff_err_dn = -speed_margin_thresh
+    else:
+      speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
+      speed_diff_err_dn = -CC_STEP / 2
+
     if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
-      self.last_accel_req = 0
+      self.last_cruise_speed_delta_req = 0
       print("cancel")
-    elif CC.cruiseControl.resume and time_since_cruise_sent > cruise_tick:
-      self.cruise_counter = self.cruise_counter + 1
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.resume, self.cruise_bus, self.cruise_counter))
-      self.last_frame_cruise_cmd_sent = self.frame
-      self.last_accel_req = accel
     elif speed_diff_req > speed_diff_err_up and CC.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
-      self.last_accel_req = accel
+      self.last_cruise_speed_delta_req = +1
     elif speed_diff_req < speed_diff_err_dn and CC.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.cruise_counter))
       self.last_frame_cruise_cmd_sent = self.frame
-      self.last_accel_req = -accel
+      self.last_cruise_speed_delta_req = -1
 
     self.cruise_speed_prev = CS.out.cruiseState.speed
 
@@ -143,7 +137,7 @@ class CarController(CarControllerBase):
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
 
-    new_actuators.accel = self.last_accel_req
+    new_actuators.accel = self.last_cruise_speed_delta_req
     new_actuators.speed = self.calcDesiredSpeed
 
     self.frame += 1
