@@ -27,7 +27,6 @@ class CarController(CarControllerBase):
 
     self.braking = False
     # redundant safety check with the board
-    self.last_latActive = False
     self.apply_steer_last = 0
     self.accel_steady = 0.
     self.last_frame_cruise_cmd_sent = 0
@@ -113,10 +112,10 @@ class CarController(CarControllerBase):
 
     self.cruise_speed_prev = CS.out.cruiseState.speed
 
-    if self.flags & BmwFlags.STEPPER_SERVO_CAN:
+    if self.flags & BmwFlags.STEPPER_SERVO_CAN and CC.latActive:
       # *** apply steering torque ***
       apply_steer = 0
-      if CC.latActive:
+      if CC.enabled:
         new_steer = actuators.steer * CarControllerParams.STEER_MAX
         # explicitly clip torque before sending on CAN
         apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
@@ -127,11 +126,9 @@ class CarController(CarControllerBase):
           brake_torque = actuators.accel
           frame_number = self.frame
           print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
-      elif CC.latActive and self.last_latActive:  # send cancel once on falling edge
+      else:
         can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
-
       self.apply_steer_last = apply_steer
-      self.last_latActive = CC.latActive
 
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX

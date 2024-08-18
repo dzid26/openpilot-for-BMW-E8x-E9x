@@ -97,7 +97,6 @@ class CarState(CarStateBase):
       ret.steeringTorque = 0
 
     ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
-    ret.steerFaultTemporary = cp_PT.vl['StatusDSC_KCAN']['DTC_on'] != 0
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
     ret.cruiseState.nonAdaptive = False # bmw doesn't have a switch
 
@@ -138,6 +137,7 @@ class CarState(CarStateBase):
     if self.CP.flags & BmwFlags.STEPPER_SERVO_CAN:
       ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
       self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
+      ret.steerFaultTemporary = int(cp_aux.vl['STEERING_STATUS']['CONTROL_STATUS']) & 0x4 != 0
 
     self.prev_gasPressed = ret.gasPressed
     return ret
