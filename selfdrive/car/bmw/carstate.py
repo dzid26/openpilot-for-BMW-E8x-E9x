@@ -36,7 +36,7 @@ class CarState(CarStateBase):
     self.left_blinker_pressed = False
     self.otherButtons = False
     self.prev_gasPressed = False
-    self.sportMode = False
+    self.dtc_mode = False
 
   def update(self, cp_PT, cp_F, cp_aux):
     # set these prev states at the beginning because they are used outside the update()
@@ -79,7 +79,7 @@ class CarState(CarStateBase):
     self.right_blinker_pressed = not blinker_on and cp_PT.vl["TurnSignals"]['RightTurn'] != 0
     self.left_blinker_pressed = not blinker_on and cp_PT.vl["TurnSignals"]['LeftTurn'] != 0
 
-    self.sportMode = cp_PT.vl["TransmissionDataDisplay"]['SportButtonState'] != 0
+    self.dtc_mode = cp_PT.vl['StatusDSC_KCAN']['DTC_on'] != 0 # drifty traction control ;)
 
     self.otherButtons = \
       cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
@@ -132,7 +132,7 @@ class CarState(CarStateBase):
     self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
 
 
-    ret.genericToggle = self.sportMode
+    ret.genericToggle = self.dtc_mode
 
     if self.CP.flags & BmwFlags.STEPPER_SERVO_CAN:
       ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
