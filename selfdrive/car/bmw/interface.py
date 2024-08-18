@@ -43,8 +43,6 @@ class CarInterface(CarInterfaceBase):
     self.can_parsers.append(self.cp_aux)
 
     self.enabled = False
-    self.gas_pressed_prev3 = False
-    self.gas_pressed_prev2 = False
 
   @staticmethod
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
@@ -203,22 +201,16 @@ class CarInterface(CarInterfaceBase):
         events.add(EventName.manualRestart)
 
     # stay in cruise control, but disable OpenPilot
-    if self.CS.cruise_resume and not self.CS.prev_cruise_resume and self.cruise_enabled_prev and ret.cruiseState.enabled and self.enabled:
+    resume_rising_edge = self.CS.cruise_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
+    if resume_rising_edge and self.enabled:  # todo self.enabled ?
       events.add(EventName.buttonCancel)
     # when in cruise control, press resume to resume OpenPilot
-    elif self.CS.cruise_resume and not self.CS.prev_cruise_resume and self.cruise_enabled_prev and ret.cruiseState.enabled and not self.enabled:
+    elif resume_rising_edge and not self.enabled:
       events.add(EventName.buttonEnable)
     if self.CS.cruise_cancel:
       events.add(EventName.buttonCancel)
     # if self.CS.gas_kickdown:
     #   events.add(EventName.pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
-
-    # update previous brake/gas pressed
-    self.gas_pressed_prev = ret.gasPressed
-    self.gas_pressed_prev2 = self.gas_pressed_prev
-    self.gas_pressed_prev3 = self.gas_pressed_prev2
-    self.brake_pressed_prev = ret.brakePressed
-    self.cruise_enabled_prev = ret.cruiseState.enabled
 
     ret.events = events.to_msg()
 
