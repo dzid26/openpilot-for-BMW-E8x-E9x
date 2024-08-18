@@ -19,9 +19,10 @@ class BmwFlags(IntFlag):
   STEPPER_SERVO_CAN = 2 ** 0
   NORMAL_CRUISE_CONTROL = 2 ** 1          # CC  $540
   DYNAMIC_CRUISE_CONTROL = 2 ** 2         # DCC $544
-  ACTIVE_CRUISE_CONTROL_LDM = 2 ** 3      # ACC $541 - genuine config with LDM and ACC sensor - not supported
-  ACTIVE_CRUISE_CONTROL_NO_LDM = 2 ** 4   # ACC $541 - diy config with no LDM - DSC, DME, KOMBI coded to $541
-  SERVOTRONIC = 2 ** 5                    # ServoTonic $216A - TODO: needs firmware query
+  ACTIVE_CRUISE_CONTROL = 2 ** 3          # ACC $541 - LDM and ACC sensor - #! not supported
+  ACTIVE_CRUISE_CONTROL_NO_ACC = 2 ** 4   # no ACC module - DSC, DME, KOMBI coded to $541, LDM coded to $544
+  ACTIVE_CRUISE_CONTROL_NO_LDM = 2 ** 5   # no LDM/ACC - DSC, DME, KOMBI coded to $541
+  SERVOTRONIC = 2 ** 6                    # ServoTonic $216A - TODO: needs firmware query
 
 class CanBus:
   PT_CAN =    0
