@@ -97,6 +97,7 @@ class CarState(CarStateBase):
       ret.steeringTorque = 0
 
     ret.espDisabled = cp_PT.vl['StatusDSC_KCAN']['DSC_full_off'] != 0
+    ret.steerFaultTemporary = cp_PT.vl['StatusDSC_KCAN']['DTC_on'] != 0
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
     ret.cruiseState.nonAdaptive = False # bmw doesn't have a switch
 
