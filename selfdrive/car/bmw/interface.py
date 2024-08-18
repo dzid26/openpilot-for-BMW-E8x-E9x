@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from cereal import car
+from openpilot.selfdrive.car import create_button_events
 from openpilot.selfdrive.car.helpers import interp
 from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car import get_safety_config
@@ -139,56 +140,13 @@ class CarInterface(CarInterfaceBase):
 
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo, 0) # todo use canbus signal
 
-    buttonEvents = []
-    #cruise button events - used to change target speed
-    if self.CS.right_blinker_pressed:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.rightBlinker
-      be.pressed = True
-      buttonEvents.append(be)
-    if self.CS.left_blinker_pressed:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.leftBlinker
-      be.pressed = True
-      buttonEvents.append(be)
-
-
-    if self.CS.cruise_plus != self.CS.prev_cruise_plus:
-      be = car.CarState.ButtonEvent.new_message()
-      print(self.CS.cruise_plus)
-      be.type = ButtonType.accelCruise
-      be.pressed = self.CS.cruise_plus  #true in rising edge
-      buttonEvents.append(be)
-    if self.CS.cruise_minus != self.CS.prev_cruise_minus:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.decelCruise
-      be.pressed = self.CS.cruise_minus  #true in rising edge
-      buttonEvents.append(be)
-    if self.CS.cruise_resume != self.CS.prev_cruise_resume:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.resumeCruise
-      be.pressed = self.CS.cruise_resume  #true in rising edge
-      buttonEvents.append(be)
-    if self.CS.cruise_cancel != self.CS.prev_cruise_cancel:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.cancel
-      be.pressed = self.CS.cruise_cancel  #true in rising edge
-      buttonEvents.append(be)
-    if self.CS.otherButtons:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.altButton1
-      be.pressed = True
-      buttonEvents.append(be)
-    # ret.buttonEvents = [  # todo, use this instead:
-    #   *create_button_events(self.CS.cruise_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
-    #   *create_button_events(self.CS.cruise_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
-    #   *create_button_events(self.CS.cruise_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
-    #   *create_button_events(self.CS.cruise_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
-    #   *create_button_events(self.CS.otherButtons, self.CS.prev_otherButtons, {1: ButtonType.altButton1}),
-    # ]
-
-
-    ret.buttonEvents = buttonEvents
+    ret.buttonEvents = [
+      *create_button_events(self.CS.cruise_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
+      *create_button_events(self.CS.cruise_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
+      *create_button_events(self.CS.cruise_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
+      *create_button_events(self.CS.cruise_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
+      *create_button_events(self.CS.otherButtons, not self.CS.otherButtons, {1: ButtonType.altButton1}),
+    ]
 
     # events
     cruise_controller_disabled = self.CP.flags & BmwFlags.ACTIVE_CRUISE_CONTROL_NO_LDM

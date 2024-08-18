@@ -84,11 +84,11 @@ class CarState(CarStateBase):
     self.otherButtons = \
       cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
       cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0 or \
-      self.prev_gasPressed and not ret.gasPressed # trat gas pedal tap as a button - button events indicate driver engagement
+      self.prev_gasPressed and not ret.gasPressed # treat gas pedal tap as a button - button events indicate driver engagement - useful if face not visible
       # TODO: add other buttons (lights, gear, DTC, etc)
 
     # emulate driver steering torque - allows lane change assist on blinker hold
-    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor, so lightly pressing the gas indicates driver intention
+    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor, so lightly pressing the gas while using a blinker confirms driver intention to change lane
     if ret.steeringPressed and ret.leftBlinker:
       ret.steeringTorque = 1
     elif ret.steeringPressed and  ret.rightBlinker:
