@@ -27,17 +27,6 @@
   ],
   "configurations": [
     {
-      "name": "run_controlsd_on_route.py",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "selfdrive/debug/run_process_on_route.py",
-      "console": "integratedTerminal",
-      "args": [
-        "${command:pickArgs}", // route
-        "controlsd",
-      ]
-    },
-    {
       "name": "Python: openpilot Process",
       "type": "debugpy",
       "request": "launch",
