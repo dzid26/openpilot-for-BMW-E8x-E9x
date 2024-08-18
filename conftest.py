@@ -3,6 +3,7 @@ import gc
 import os
 import pytest
 import random
+import sys
 
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.system.manager import manager
@@ -98,3 +99,17 @@ def pytest_configure(config):
 
   config_line = "shared_download_cache: share download cache between tests"
   config.addinivalue_line("markers", config_line)
+
+
+def is_debugging():
+    return 'debugpy' in sys.modules
+
+# enable_stop_on_exceptions if the debugger is running during a test
+if is_debugging():
+  @pytest.hookimpl(tryfirst=True)
+  def pytest_exception_interact(call):
+    raise call.excinfo.value
+
+  @pytest.hookimpl(tryfirst=True)
+  def pytest_internalerror(excinfo):
+    raise excinfo.value
