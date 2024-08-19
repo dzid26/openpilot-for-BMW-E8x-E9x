@@ -27,6 +27,7 @@ class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
     super().__init__(dbc_name, CP)
     self.flags = CP.flags
+    self.minCruiseSpeed = CP.minEnableSpeed
 
     self.CC_cancel = False  # local cruise control cancel
     self.CC_enabled_prev = False
@@ -83,7 +84,7 @@ class CarController(CarControllerBase):
     # hysteresis
     speed_margin_thresh = 0.1
     hysteresis_timeout = 0.2
-    # hysteresis, cruiseState.speed changes in steps
+    # hysteresis, CS.out.cruiseState.speed changes in steps
     if self.last_cruise_speed_delta_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
       speed_diff_err_up = speed_margin_thresh
       speed_diff_err_dn =  -CC_STEP
@@ -104,6 +105,9 @@ class CarController(CarControllerBase):
     if not CS.out.cruiseState.enabled: # clear cancel, when cruise gets canceled
       self.CC_cancel = False
 
+    if CS.out.cruiseState.speed - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
+      and CS.out.vEgo - self.minCruiseSpeed < 0.1 and CS.out.vEgo - self.calcDesiredSpeed > 1:
+      self.CC_cancel = True
 
     if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1

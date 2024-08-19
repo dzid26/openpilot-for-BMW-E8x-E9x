@@ -94,12 +94,10 @@ class CarInterface(CarInterfaceBase):
     if 0xbc in fingerprint[CanBus.PT_CAN]: # XI has a transfer case
       ret.steerRatio = 18.5 # XI has slower steering rack
 
-    # todo enable is done by stock CC, so probably delete this
-    # is_metric = Params().get("IsMetric", encoding='utf8') == "1"
-    # if ret.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:  # DCC imperial has higher threshold
-    #   ret.minEnableSpeed = 30. * CV.KPH_TO_MS if is_metric else 20. * CV.MPH_TO_MS
-    # if ret.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
-    #   ret.minEnableSpeed = 18. * CV.MPH_TO_MS
+    if ret.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:  # DCC imperial has higher threshold
+      ret.minEnableSpeed = 30. * CV.KPH_TO_MS # if self.CS.is_metric else 20. * CV.MPH_TO_MS
+    if ret.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
+      ret.minEnableSpeed = 30. * CV.KPH_TO_MS
 
     ret.carName = "bmw"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.bmw)]

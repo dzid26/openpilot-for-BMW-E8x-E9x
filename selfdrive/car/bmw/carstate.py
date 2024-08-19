@@ -14,7 +14,7 @@ class CarState(CarStateBase):
     self.steer_angle_delta = 0.
     self.gas_kickdown = False
 
-    self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo use is_metric from carstate
+    self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo set is_metric in _get_params somehow
     self.cruise_plus = False
     self.cruise_minus = False
     self.cruise_plus5 = False
