@@ -60,7 +60,7 @@ class CarController(CarControllerBase):
     # *** stalk press rate ***
     if (actuators.accel < 0.2 or actuators.accel > 0.4) and abs(speed_diff_req) > CC_STEP * 1.5:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
-      cruise_tick = 0.05   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
+      cruise_tick = 0.1   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
       accel = 2
     else:
       cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
