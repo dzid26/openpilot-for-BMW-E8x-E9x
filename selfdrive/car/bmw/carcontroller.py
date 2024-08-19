@@ -35,7 +35,7 @@ class CarController(CarControllerBase):
     self.calcDesiredSpeed = 0
     self.cruise_counter = 0
     self.stock_cruise_counter_last = -1
-    self.last_user_steer_cancel = False
+    self.last_user_steer_cancel = True
 
     self.cruise_bus = CanBus.PT_CAN
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
@@ -115,8 +115,7 @@ class CarController(CarControllerBase):
 
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
       user_steer_cancel = CS.dtc_mode or not CC.enabled
-      user_steer_cancel_rising_edge = user_steer_cancel and not self.last_user_steer_cancel
-      if CC.latActive and not CS.dtc_mode or user_steer_cancel_rising_edge:
+      if CC.latActive and not user_steer_cancel or (user_steer_cancel and not self.last_user_steer_cancel):
         # *** apply steering torque ***
         apply_steer = 0
         if user_steer_cancel:
@@ -134,7 +133,7 @@ class CarController(CarControllerBase):
             print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
         self.apply_steer_last = apply_steer
         self.last_dtc = CS.dtc_mode
-        self.last_user_steer_cancel = user_steer_cancel
+      self.last_user_steer_cancel = user_steer_cancel
 
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
