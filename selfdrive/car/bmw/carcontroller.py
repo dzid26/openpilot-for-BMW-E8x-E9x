@@ -1,5 +1,5 @@
 from cereal import car
-from openpilot.selfdrive.car import DT_CTRL, apply_meas_steer_torque_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_dist_to_meas_limits
 from openpilot.selfdrive.car.bmw import bmwcan
 from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
 from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
@@ -131,12 +131,12 @@ class CarController(CarControllerBase):
       steer_error =  not CC.latActive and CC.enabled
       if not steer_error and not CS.dtc_mode: # stop steer CAN tx when DTC is On or if steering is unavailable (unless user cancels)
         # *** apply steering torque ***
-        apply_steer = 0
         if CC.enabled:
           new_steer = actuators.steer * CarControllerParams.STEER_MAX
           # explicitly clip torque before sending on CAN
-          apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
-
+          apply_steer = apply_dist_to_meas_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps,
+                                             CarControllerParams.STEER_DELTA_UP, CarControllerParams.STEER_DELTA_DOWN,
+                                             CarControllerParams.STEER_ERROR_MAX, CarControllerParams.STEER_MAX)
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
           # *** control msgs ***
           if (self.frame % 10) == 0: #slow print
@@ -144,6 +144,7 @@ class CarController(CarControllerBase):
             frame_number = self.frame
             print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
         else:
+          apply_steer = 0
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
         self.apply_steer_last = apply_steer
 
