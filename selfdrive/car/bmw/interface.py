@@ -43,8 +43,6 @@ class CarInterface(CarInterfaceBase):
     self.cp_aux = self.CS.get_actuator_can_parser(CP)
     self.can_parsers.append(self.cp_aux)
 
-    self.enabled = False
-
   @staticmethod
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
   def get_steer_feedforward_servotronic(desired_angle, v_ego): # accounts for steering rack ratio and/or caster nonlinearities https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-15#post-131271
@@ -156,30 +154,16 @@ class CarInterface(CarInterfaceBase):
         # while in standstill, send a user alert
         events.add(EventName.manualRestart)
 
-    # stay in cruise control, but disable OpenPilot
+    # *** disable/enable OpenPilot on resume button press ***
     resume_rising_edge = self.CS.cruise_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
-    if resume_rising_edge and self.enabled:  # todo self.enabled ?
+    if resume_rising_edge and c.enabled:
       events.add(EventName.buttonCancel)
     # when in cruise control, press resume to resume OpenPilot
-    elif resume_rising_edge and not self.enabled:
+    elif resume_rising_edge and not c.enabled:
       events.add(EventName.buttonEnable)
-    # if self.CS.gas_kickdown:
+    # if self.CS.gas_kickdown: # todo do we want disable on kickdown?
     #   events.add(EventName.pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
     ret.events = events.to_msg()
 
     return ret
-
-
-  # # pass in a car.CarControl
-  # # to be called @ 100hz
-  # def apply(self, c):
-
-  #   self.enabled = c.enabled
-  #   can_sends = self.CC.update(c, self.CS, self.frame)
-  #                              # c.actuators, c.cruiseControl,
-  #                              # c.hudControl.visualAlert, c.hudControl.leftLaneVisible,
-  #                              # c.hudControl.rightLaneVisible, c.hudControl.leadVisible,
-  #                              # c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart)
-
-  #   return can_sends
