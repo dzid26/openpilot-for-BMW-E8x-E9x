@@ -3,45 +3,48 @@
  <tabbed_widget parent="main_window" name="Main Window">
   <Tab tab_name="CarControlLong" containers="1">
    <Container>
-    <DockSplitter sizes="0.25;0.25;0.25;0.25" count="4" orientation="-">
+    <DockSplitter count="4" sizes="0.25;0.25;0.25;0.25" orientation="-">
      <DockArea name="...">
-      <plot flip_x="false" style="Dots" mode="TimeSeries" flip_y="false">
-       <range bottom="-1.466136" top="1.880855" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Dots">
+       <range left="5.980561" bottom="-73.305556" top="65.527777" right="845.659827"/>
        <limitY/>
-       <curve color="#15c01b" name="Cruise combined TX"/>
-       <curve color="#a3b41f" name="speed_diff_req"/>
-       <curve color="#d62728" name="Cruise combined RX"/>
-       <curve color="#9467bd" name="/carControl/actuators/accel"/>
-       <curve color="#17becf" name="/carOutput/actuatorsOutput/accel"/>
+       <curve name="Cruise combined TX" color="#00ea06"/>
+       <curve name="speed_diff_req" color="#a3b41f"/>
+       <curve name="Cruise combined RX" color="#0068ff"/>
+       <curve name="/carControl/actuators/accel" color="#9467bd"/>
+       <curve name="/carOutput/actuatorsOutput/accel" color="#952539"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
-       <range bottom="2.000000" top="55.000000" left="124.785890" right="132.541711"/>
-       <limitY min="2" max="55"/>
-       <curve color="#17becf" name="/carState/cruiseState/speed"/>
-       <curve color="#d62728" name="/carState/vEgo"/>
-       <curve color="#1ac938" name="carState.vEgo kmh"/>
-       <curve color="#ced627" name="vCruiseM_S"/>
-       <curve color="#1f77b4" name="/carOutput/actuatorsOutput/speed"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="2.000000" top="55.000000" right="845.659827"/>
+       <limitY max="55" min="2"/>
+       <curve name="/carState/cruiseState/speed" color="#17becf"/>
+       <curve name="/carState/vEgo" color="#d62728"/>
+       <curve name="carState.vEgo kmh" color="#1ac938"/>
+       <curve name="vCruiseM_S" color="#ced627"/>
+       <curve name="/carOutput/actuatorsOutput/speed" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="LinesAndDots" mode="TimeSeries" flip_y="false">
-       <range bottom="-0.025000" top="1.025000" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="LinesAndDots">
+       <range left="5.980561" bottom="-0.025000" top="1.025000" right="845.659827"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/carControl/actuators/longControlState"/>
-       <curve color="#9467bd" name="/carControl/cruiseControl/cancel"/>
-       <curve color="#1f77b4" name="/carControl/enabled"/>
-       <curve color="#d62728" name="/carState/cruiseState/enabled"/>
+       <curve name="/carControl/actuators/longControlState" color="#ff7f0e"/>
+       <curve name="/carControl/cruiseControl/cancel" color="#9467bd"/>
+       <curve name="/carControl/enabled" color="#1f77b4"/>
+       <curve name="/carState/cruiseState/enabled" color="#d62728"/>
+       <curve name="/carState/brakePressed" color="#1ac938"/>
+       <curve name="/can/1/CruiseControlStalk/cancel" color="#ff7f0e"/>
+       <curve name="/carState/gasPressed" color="#f14cc1"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="LinesAndDots" mode="TimeSeries" flip_y="false">
-       <range bottom="37.149961" top="106.654879" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="LinesAndDots">
+       <range left="5.980561" bottom="-6.592433" top="261.380303" right="845.659827"/>
        <limitY/>
-       <curve color="#1ac938" name="carState.vEgo kmh"/>
-       <curve color="#ff7f0e" name="/controlsState/vCruiseCluster"/>
+       <curve name="carState.vEgo kmh" color="#1ac938"/>
+       <curve name="/controlsState/vCruiseCluster" color="#ff7f0e"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -49,15 +52,24 @@
   </Tab>
   <Tab tab_name="CarControlLat" containers="1">
    <Container>
-    <DockSplitter sizes="1" count="1" orientation="-">
+    <DockSplitter count="2" sizes="0.5;0.5" orientation="-">
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
-       <range bottom="-5.219237" top="10.214898" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="-597.208403" top="590.795012" right="845.659827"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/carControl/actuators/steeringAngleDeg"/>
-       <curve color="#f14cc1" name="/carState/steeringAngleDeg"/>
-       <curve color="#17becf" name="/carControl/actuators/steerOutputCan"/>
-       <curve color="#bcbd22" name="/carOutput/actuatorsOutput/steerOutputCan"/>
+       <curve name="/carControl/actuators/steeringAngleDeg" color="#ff7f0e"/>
+       <curve name="/carState/steeringAngleDeg" color="#f14cc1"/>
+       <curve name="/carControl/actuators/steerOutputCan" color="#17becf"/>
+       <curve name="/carOutput/actuatorsOutput/steerOutputCan" color="#bcbd22"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="-0.348567" top="1.032892" right="845.659827"/>
+       <limitY/>
+       <curve name="/carState/steeringTorqueEps" color="#d62728"/>
+       <curve name="/carControl/actuators/steer" color="#1ac938"/>
+       <curve name="/carOutput/actuatorsOutput/steer" color="#9467bd"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -65,34 +77,34 @@
   </Tab>
   <Tab tab_name="SteerLiveParam" containers="1">
    <Container>
-    <DockSplitter sizes="0.35;0.35;0.3" count="3" orientation="-">
+    <DockSplitter count="3" sizes="0.35013;0.34961;0.30026" orientation="-">
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
-       <range bottom="18.262045" top="18.263473" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="18.175389" top="18.395656" right="845.659827"/>
        <limitY/>
-       <curve color="#1ac938" name="/liveParameters/steerRatio"/>
+       <curve name="/liveParameters/steerRatio" color="#1ac938"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
-       <range bottom="-1.258181" top="3.014280" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="-548.123546" top="544.097362" right="845.659827"/>
        <limitY/>
-       <curve color="#0e0fff" name="/liveParameters/angleOffsetDeg"/>
-       <curve color="#f14cc1" name="/liveParameters/angleOffsetAverageDeg"/>
-       <curve color="#ff002f" name="/carState/steeringAngleDeg"/>
+       <curve name="/liveParameters/angleOffsetDeg" color="#0e0fff"/>
+       <curve name="/liveParameters/angleOffsetAverageDeg" color="#f14cc1"/>
+       <curve name="/carState/steeringAngleDeg" color="#ff002f"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" mode="TimeSeries" flip_y="false">
-       <range bottom="10.753911" top="11.812787" left="124.785890" right="132.541711"/>
+      <plot flip_x="false" mode="TimeSeries" flip_y="false" style="Lines">
+       <range left="5.980561" bottom="-0.526390" top="19.107128" right="845.659827"/>
        <limitY/>
-       <curve color="#d62728" name="/carState/vEgo"/>
+       <curve name="/carState/vEgo" color="#d62728"/>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="0"/>
+  <currentTabIndex index="1"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->
@@ -103,7 +115,7 @@
  </Plugins>
  <!-- - - - - - - - - - - - - - - -->
  <previouslyLoaded_Datafiles>
-  <fileInfo filename="../tmp1mykzdei.rlog" prefix="">
+  <fileInfo prefix="" filename="../tmprd0bsg53.rlog">
    <selected_datasources value=""/>
    <plugin ID="DataLoad Rlog"/>
   </fileInfo>
