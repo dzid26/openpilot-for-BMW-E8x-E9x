@@ -146,11 +146,10 @@ class CarInterface(CarInterfaceBase):
 
     # events
     events = self.create_common_events(ret, pcm_enable=True)
-    if ret.vEgo < self.CP.minEnableSpeed and self.CP.openpilotLongitudinalControl:
-      events.add(EventName.speedTooLow)
-      if ret.vEgo < self.CP.minEnableSpeed - 1:
-        # while in standstill, send a user alert
-        events.add(EventName.manualRestart)
+    if ret.vEgo < self.CP.minEnableSpeed:
+      events.add(EventName.belowEngageSpeed)
+      if self.CS.CP.minEnableSpeed > 0 and c.actuators.accel > 0.2:
+          events.add(EventName.speedTooLow) # can't restart cruise anymore
 
     # *** disable/enable OpenPilot on resume button press ***
     resume_rising_edge = self.CS.cruise_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
