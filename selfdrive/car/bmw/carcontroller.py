@@ -93,7 +93,7 @@ class CarController(CarControllerBase):
       speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
       speed_diff_err_dn = -CC_STEP / 2
 
-    if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
+    if not CC.enabled and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.cruise_counter))
       self.last_time_cruise_cmd_sent = now_nanos
