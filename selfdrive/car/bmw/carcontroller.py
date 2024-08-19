@@ -18,6 +18,9 @@ DECEL_SLOW = -2   # cruise control decrease speed slowly
 DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
+STOCK_CRUISE_STALK_TICK = 0.2 # sample rate of stock cruise stalk messages when not pressed
+STOCK_CRUISE_STALK_HOLD_TICK = 0.05 # sample rate of stock cruise stalk messages when pressed
+
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
@@ -29,7 +32,7 @@ class CarController(CarControllerBase):
     # redundant safety check with the board
     self.apply_steer_last = 0
     self.accel_steady = 0.
-    self.last_frame_cruise_cmd_sent = 0
+    self.last_time_cruise_cmd_sent = 0
     self.last_cruise_speed_delta_req = 0
     self.cruise_speed_prev = 0
     self.calcDesiredSpeed = 0
@@ -58,28 +61,24 @@ class CarController(CarControllerBase):
       cruise_tick = 0.05   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
       accel = 2
     else:
-      cruise_tick = 0.2 # default rate when not holding stalk
+      cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
       accel = 1
 
     # *** cruise control counter handling ***
     # detect stock CruiseControlStalk message counter change - message arrives at only 5Hz when idle
     if self.stock_cruise_counter_last != CS.cruise_counter:
       self.cruise_counter = CS.cruise_counter
+      self.last_time_cruise_cmd_sent = now_nanos - cruise_tick / 2 # our message will be sent in between the stock
     self.stock_cruise_counter_last = CS.cruise_counter
 
     # check if cruise speed actually changed - this covers changes due to OP and driver's commands
     cruise_speed_delta = self.cruise_speed_prev - CS.out.cruiseState.speed
     if (cruise_speed_delta) != 0:
       self.last_cruise_speed_delta_req = cruise_speed_delta
+    self.cruise_speed_prev = CS.out.cruiseState.speed
 
+    time_since_cruise_sent =  (now_nanos - self.last_time_cruise_cmd_sent) / 1e9
 
-    frames_since_cruise_sent = (self.frame - self.last_frame_cruise_cmd_sent)
-    # it should only take one frame for car to update cruise speed. If cruise speed changed after two frames,
-    # it was probably driver pressing stalks. In that case update the timestamp too
-    if frames_since_cruise_sent > 1.5: # ignore if cruiseState.speed changed shortly after sending command
-      self.last_frame_cruise_cmd_sent = self.frame
-
-    time_since_cruise_sent = frames_since_cruise_sent * DT_CTRL
     # hysteresis
     speed_margin_thresh = 0.1
     hysteresis_timeout = 0.2
@@ -97,21 +96,21 @@ class CarController(CarControllerBase):
     if CC.cruiseControl.cancel and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.cruise_counter))
-      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_time_cruise_cmd_sent = now_nanos
       self.last_cruise_speed_delta_req = 0
       print("cancel")
     elif speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.cruise_counter))
-      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_time_cruise_cmd_sent = now_nanos
       self.last_cruise_speed_delta_req = +1
     elif speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.cruise_counter))
-      self.last_frame_cruise_cmd_sent = self.frame
+      self.last_time_cruise_cmd_sent = now_nanos
       self.last_cruise_speed_delta_req = -1
 
-    self.cruise_speed_prev = CS.out.cruiseState.speed
+
 
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
       user_steer_cancel = CS.dtc_mode or not CC.enabled
