@@ -127,15 +127,12 @@ class CarController(CarControllerBase):
       self.last_cruise_speed_delta_req = -1
 
 
-
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
-      user_steer_cancel = CS.dtc_mode or not CC.enabled
-      if CC.latActive and not user_steer_cancel or (user_steer_cancel and not self.last_user_steer_cancel):
+      steer_error =  not CC.latActive and CC.enabled
+      if not steer_error and not CS.dtc_mode: # stop steer CAN tx when DTC is On or if steering is unavailable (unless user cancels)
         # *** apply steering torque ***
         apply_steer = 0
-        if user_steer_cancel:
-          can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
-        else:
+        if CC.enabled:
           new_steer = actuators.steer * CarControllerParams.STEER_MAX
           # explicitly clip torque before sending on CAN
           apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorqueEps, CarControllerParams)
@@ -146,9 +143,9 @@ class CarController(CarControllerBase):
             brake_torque = actuators.accel
             frame_number = self.frame
             print(f"Steering req: {actuators.steer}, Brake torque: {brake_torque}, Frame number: {frame_number}")
+        else:
+          can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
         self.apply_steer_last = apply_steer
-        self.last_dtc = CS.dtc_mode
-      self.last_user_steer_cancel = user_steer_cancel
 
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
