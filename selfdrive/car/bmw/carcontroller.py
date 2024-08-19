@@ -28,8 +28,8 @@ class CarController(CarControllerBase):
     super().__init__(dbc_name, CP)
     self.flags = CP.flags
 
-
-    self.braking = False
+    self.CC_cancel = False  # local cruise control cancel
+    self.CC_enabled_prev = False
     # redundant safety check with the board
     self.apply_steer_last = 0
     self.accel_steady = 0.
@@ -94,7 +94,18 @@ class CarController(CarControllerBase):
       speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
       speed_diff_err_dn = -CC_STEP / 2
 
-    if not CC.enabled and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
+
+    # *** cruise control cancel signal ***
+    # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
+    # CC.enabled appears after cruiseState.enabled, so we need to check rising edge to prevent instantaneous cancel after cruise is enabled
+    # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
+    if not CC.enabled and self.CC_enabled_prev:
+      self.CC_cancel = True
+    if not CS.out.cruiseState.enabled: # clear cancel, when cruise gets canceled
+      self.CC_cancel = False
+
+
+    if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.cruise_counter))
       self.last_time_cruise_cmd_sent = now_nanos
