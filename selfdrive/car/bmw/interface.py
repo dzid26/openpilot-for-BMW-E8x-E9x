@@ -149,9 +149,7 @@ class CarInterface(CarInterfaceBase):
     ]
 
     # events
-    cruise_controller_disabled = self.CP.flags & BmwFlags.ACTIVE_CRUISE_CONTROL_NO_LDM
-
-    events = self.create_common_events(ret, pcm_enable=not cruise_controller_disabled)
+    events = self.create_common_events(ret, pcm_enable=True)
     if ret.vEgo < self.CP.minEnableSpeed and self.CP.openpilotLongitudinalControl:
       events.add(EventName.speedTooLow)
       if ret.vEgo < self.CP.minEnableSpeed - 1:
@@ -165,8 +163,6 @@ class CarInterface(CarInterfaceBase):
     # when in cruise control, press resume to resume OpenPilot
     elif resume_rising_edge and not self.enabled:
       events.add(EventName.buttonEnable)
-    if self.CS.cruise_cancel:
-      events.add(EventName.buttonCancel)
     # if self.CS.gas_kickdown:
     #   events.add(EventName.pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
