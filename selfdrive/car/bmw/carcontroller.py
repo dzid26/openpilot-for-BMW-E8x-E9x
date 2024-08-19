@@ -5,6 +5,7 @@ from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
 from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from opendbc.can.packer import CANPacker
+from openpilot.selfdrive.car.helpers import clip
 from openpilot.selfdrive.car.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -73,8 +74,8 @@ class CarController(CarControllerBase):
 
     # check if cruise speed actually changed - this covers changes due to OP and driver's commands
     cruise_speed_delta = self.cruise_speed_prev - CS.out.cruiseState.speed
-    if (cruise_speed_delta) != 0:
-      self.last_cruise_speed_delta_req = cruise_speed_delta
+    if cruise_speed_delta != 0:
+      self.last_cruise_speed_delta_req = clip(cruise_speed_delta, -5, 5) # saturate for a display
     self.cruise_speed_prev = CS.out.cruiseState.speed
 
     time_since_cruise_sent =  (now_nanos - self.last_time_cruise_cmd_sent) / 1e9
