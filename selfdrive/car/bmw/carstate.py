@@ -144,7 +144,7 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parser(CP): #PT-CAN
-    messages = [
+    messages = [ # message, frequency
       ("EngineAndBrake", 100),
       ("TransmissionDataDisplay", 5),
       ("AccPedal", 100),
@@ -169,7 +169,7 @@ class CarState(CarStateBase):
   @staticmethod # $540 vehicle option could use just PT_CAN, but $544 requires sending and receiving cruise commands on F-CAN. Use F-can. Works for both options
   def get_F_can_parser(CP):
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
-      messages = [  # refresh frequency Hz
+      messages = [ # message, frequency
       ("SteeringWheelAngle_DSC", 100),
       ("CruiseControlStalk",  5),
       ]
@@ -181,7 +181,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_actuator_can_parser(CP):
     if CP.flags & BmwFlags.STEPPER_SERVO_CAN:
-      messages = [ # refresh frequency Hz
+      messages = [ # message, frequency
       ("STEERING_STATUS", 100),
       ]
     else:
