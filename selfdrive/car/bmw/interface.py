@@ -4,7 +4,7 @@ from openpilot.selfdrive.car import create_button_events
 from openpilot.selfdrive.car.helpers import interp
 from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car import get_safety_config
-from openpilot.selfdrive.car.bmw.values import CAR, CanBus, BmwFlags, CarControllerParams
+from openpilot.selfdrive.car.bmw.values import CanBus, BmwFlags, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 

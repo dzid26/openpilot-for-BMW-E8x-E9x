@@ -88,7 +88,7 @@ class CarState(CarStateBase):
       # TODO: add other buttons (lights, gear, DTC, etc)
 
     # emulate driver steering torque - allows lane change assist on blinker hold
-    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor, so lightly pressing the gas while using a blinker confirms driver intention to change lane
+    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor - tapping the gas while using a blinker confirms driver intention to change lane
     if ret.steeringPressed and ret.leftBlinker:
       ret.steeringTorque = 1
     elif ret.steeringPressed and  ret.rightBlinker:

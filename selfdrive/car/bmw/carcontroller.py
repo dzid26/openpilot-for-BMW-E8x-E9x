@@ -61,10 +61,8 @@ class CarController(CarControllerBase):
     if (actuators.accel < 0.2 or actuators.accel > 0.2) and abs(speed_diff_req) > CC_STEP * 1.5:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
       cruise_tick = 0.1   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
-      accel = 2
     else:
       cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
-      accel = 1
 
     # *** cruise control counter handling ***
     # detect stock CruiseControlStalk message counter change - message arrives at only 5Hz when idle
