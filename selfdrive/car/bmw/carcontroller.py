@@ -115,12 +115,12 @@ class CarController(CarControllerBase):
       self.last_time_cruise_cmd_sent = now_nanos
       self.last_cruise_speed_delta_req = 0
       print("cancel")
-    elif speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
+    elif CC.enabled and speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.cruise_counter))
       self.last_time_cruise_cmd_sent = now_nanos
       self.last_cruise_speed_delta_req = +1
-    elif speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
+    elif CC.enabled and speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
       self.cruise_counter = self.cruise_counter + 1
       can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.cruise_counter))
       self.last_time_cruise_cmd_sent = now_nanos
