@@ -100,12 +100,13 @@ class CarController(CarControllerBase):
     # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
     if not CC.enabled and self.CC_enabled_prev:
       self.CC_cancel = True
-    if not CS.out.cruiseState.enabled: # clear cancel, when cruise gets canceled
-      self.CC_cancel = False
-
+    # if we need to go below cruise speed, request cancel and coast while steering enabled
     if CS.out.cruiseState.speed - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
       and CS.out.vEgo - self.minCruiseSpeed < 0.1 and CS.out.vEgo - self.calcDesiredSpeed > 1:
       self.CC_cancel = True
+    # keep requesting cancel until the cruise is disabled
+    if not CS.out.cruiseState.enabled:
+      self.CC_cancel = False
 
     if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
       self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
