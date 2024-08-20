@@ -137,10 +137,10 @@ class CarInterface(CarInterfaceBase):
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo, 0) # todo use canbus signal
 
     ret.buttonEvents = [
-      *create_button_events(self.CS.cruise_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
-      *create_button_events(self.CS.cruise_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
-      *create_button_events(self.CS.cruise_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
-      *create_button_events(self.CS.cruise_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
+      *create_button_events(self.CS.cruise_stalk_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
+      *create_button_events(self.CS.cruise_stalk_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
+      *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
+      *create_button_events(self.CS.cruise_stalk_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
       *create_button_events(self.CS.otherButtons, not self.CS.otherButtons, {1: ButtonType.altButton1}),
     ]
 
@@ -152,7 +152,7 @@ class CarInterface(CarInterfaceBase):
           events.add(EventName.speedTooLow) # can't restart cruise anymore
 
     # *** disable/enable OpenPilot on resume button press ***
-    resume_rising_edge = self.CS.cruise_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
+    resume_rising_edge = self.CS.cruise_stalk_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
     if resume_rising_edge and c.enabled:
       events.add(EventName.buttonCancel)
     # when in cruise control, press resume to resume OpenPilot
