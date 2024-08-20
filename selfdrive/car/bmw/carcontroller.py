@@ -71,6 +71,13 @@ class CarController(CarControllerBase):
       self.last_time_cruise_cmd_sent = now_nanos - cruise_tick / 2 # our message will be sent in between the stock
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
 
+    cruise_stalk_human_pressing = CS.cruise_stalk_plus \
+                               or CS.cruise_stalk_minus \
+                               or CS.cruise_stalk_plus5 \
+                               or CS.cruise_stalk_minus5 \
+                               or CS.cruise_stalk_resume \
+                               or CS.cruise_stalk_cancel
+
     # check if cruise speed actually changed - this covers changes due to OP and driver's commands
     cruise_speed_delta = self.cruise_speed_prev - CS.out.cruiseState.speed
     if cruise_speed_delta != 0:
@@ -108,22 +115,23 @@ class CarController(CarControllerBase):
     if not CS.out.cruiseState.enabled:
       self.CC_cancel = False
 
-    if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.tx_cruise_stalk_counter))
-      self.last_time_cruise_cmd_sent = now_nanos
-      self.last_cruise_speed_delta_req = 0
-      print("cancel")
-    elif CC.enabled and speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
-      self.last_time_cruise_cmd_sent = now_nanos
-      self.last_cruise_speed_delta_req = +1
-    elif CC.enabled and speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
-      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
-      can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
-      self.last_time_cruise_cmd_sent = now_nanos
-      self.last_cruise_speed_delta_req = -1
+    if not cruise_stalk_human_pressing:
+      if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.tx_cruise_stalk_counter))
+        self.last_time_cruise_cmd_sent = now_nanos
+        self.last_cruise_speed_delta_req = 0
+        print("cancel")
+      elif CC.enabled and speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
+        self.last_time_cruise_cmd_sent = now_nanos
+        self.last_cruise_speed_delta_req = +1
+      elif CC.enabled and speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
+        self.last_time_cruise_cmd_sent = now_nanos
+        self.last_cruise_speed_delta_req = -1
 
 
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
