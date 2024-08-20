@@ -68,9 +68,9 @@ class CarController(CarControllerBase):
       cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
 
     # *** cruise control counter handling ***
-    # detect stock CruiseControlStalk message counter change - message arrives at only 5Hz when idle
+    # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if self.rx_cruise_stalk_counter_last != CS.cruise_stalk_counter:
-      self.tx_cruise_stalk_counter = CS.cruise_stalk_counter
+      self.tx_cruise_stalk_counter = CS.cruise_stalk_counter + 1
       self.last_time_cruise_cmd_sent = now_nanos - cruise_tick / 2 # our message will be sent in between the stock
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
 
