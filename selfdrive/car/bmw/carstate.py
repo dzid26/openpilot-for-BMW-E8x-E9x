@@ -15,22 +15,22 @@ class CarState(CarStateBase):
     self.gas_kickdown = False
 
     self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo set is_metric in _get_params somehow
-    self.cruise_plus = False
-    self.cruise_minus = False
-    self.cruise_plus5 = False
-    self.cruise_minus5 = False
-    self.cruise_resume = False
-    self.cruise_cancel = False
-    self.cruise_cancelUpStalk = False
-    self.cruise_cancelDnStalk = False
-    self.prev_cruise_plus = self.cruise_plus
-    self.prev_cruise_minus = self.cruise_minus
-    self.prev_cruise_plus5 = self.cruise_plus5
-    self.prev_cruise_minus5 = self.cruise_minus5
-    self.prev_cruise_resume = self.cruise_resume
-    self.prev_cruise_cancel = self.cruise_cancel
-    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
-    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
+    self.cruise_stalk_plus = False
+    self.cruise_stalk_minus = False
+    self.cruise_stalk_plus5 = False
+    self.cruise_stalk_minus5 = False
+    self.cruise_stalk_resume = False
+    self.cruise_stalk_cancel = False
+    self.cruise_stalk_cancel_up = False
+    self.cruise_stalk_cancel_dn = False
+    self.prev_cruise_plus = self.cruise_stalk_plus
+    self.prev_cruise_minus = self.cruise_stalk_minus
+    self.prev_cruise_plus5 = self.cruise_stalk_plus5
+    self.prev_cruise_minus5 = self.cruise_stalk_minus5
+    self.prev_cruise_resume = self.cruise_stalk_resume
+    self.prev_cruise_cancel = self.cruise_stalk_cancel
+    self.prev_cruise_cancelUpStalk = self.cruise_stalk_cancel_up
+    self.prev_cruise_cancelDnStalk = self.cruise_stalk_cancel_dn
 
     self.right_blinker_pressed = False
     self.left_blinker_pressed = False
@@ -40,14 +40,14 @@ class CarState(CarStateBase):
 
   def update(self, cp_PT, cp_F, cp_aux):
     # set these prev states at the beginning because they are used outside the update()
-    self.prev_cruise_plus = self.cruise_plus
-    self.prev_cruise_minus = self.cruise_minus
-    self.prev_cruise_plus5 = self.cruise_plus5
-    self.prev_cruise_minus5 = self.cruise_minus5
-    self.prev_cruise_resume = self.cruise_resume
-    self.prev_cruise_cancel = self.cruise_cancel
-    self.prev_cruise_cancelUpStalk = self.cruise_cancelUpStalk
-    self.prev_cruise_cancelDnStalk = self.cruise_cancelDnStalk
+    self.prev_cruise_plus = self.cruise_stalk_plus
+    self.prev_cruise_minus = self.cruise_stalk_minus
+    self.prev_cruise_plus5 = self.cruise_stalk_plus5
+    self.prev_cruise_minus5 = self.cruise_stalk_minus5
+    self.prev_cruise_resume = self.cruise_stalk_resume
+    self.prev_cruise_cancel = self.cruise_stalk_cancel
+    self.prev_cruise_cancelUpStalk = self.cruise_stalk_cancel_up
+    self.prev_cruise_cancelDnStalk = self.cruise_stalk_cancel_dn
 
     ret = car.CarState.new_message()
 
@@ -120,16 +120,15 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
 
-    self.cruise_plus = cruiseControlStalkMsg['plus1'] != 0
-    self.cruise_minus = cruiseControlStalkMsg['minus1'] != 0
-    self.cruise_plus5 = cruiseControlStalkMsg['plus5'] != 0
-    self.cruise_minus5 = cruiseControlStalkMsg['minus5'] != 0
-    self.cruise_resume = cruiseControlStalkMsg['resume'] != 0
-    self.cruise_cancel = cruiseControlStalkMsg['cancel'] != 0
-    self.cruise_cancelUpStalk = cruiseControlStalkMsg['cancel_lever_up'] != 0
-    self.cruise_counter = cruiseControlStalkMsg['Counter_404'] != 0
-
-    self.cruise_cancelDnStalk = self.cruise_cancel and not self.cruise_cancelUpStalk
+    self.cruise_stalk_plus = cruiseControlStalkMsg['plus1'] != 0
+    self.cruise_stalk_minus = cruiseControlStalkMsg['minus1'] != 0
+    self.cruise_stalk_plus5 = cruiseControlStalkMsg['plus5'] != 0
+    self.cruise_stalk_minus5 = cruiseControlStalkMsg['minus5'] != 0
+    self.cruise_stalk_resume = cruiseControlStalkMsg['resume'] != 0
+    self.cruise_stalk_cancel = cruiseControlStalkMsg['cancel'] != 0
+    self.cruise_stalk_cancel_up = cruiseControlStalkMsg['cancel_lever_up'] != 0
+    self.cruise_stalk_counter = cruiseControlStalkMsg['Counter_404'] != 0
+    self.cruise_stalk_cancel_dn = self.cruise_stalk_cancel and not self.cruise_stalk_cancel_up
 
 
     ret.genericToggle = self.dtc_mode
