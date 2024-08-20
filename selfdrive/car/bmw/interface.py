@@ -46,17 +46,17 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
   def get_steer_feedforward_servotronic(desired_angle, v_ego): # accounts for steering rack ratio and/or caster nonlinearities https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-15#post-131271
-    hold_BP = [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0]
-    hold_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0]
-    rat = interp(desired_angle, hold_BP, hold_V)
-    return desired_angle * rat # todo add speed component
+    angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
+    hold_torque_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0] # Nm
+    hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
+    return hold_torque # todo add speed component
 
   @staticmethod
   def get_steer_feedforward(desired_angle, v_ego):
-    hold_BP = [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0]
-    hold_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0]
-    rat = interp(desired_angle, hold_BP, hold_V)
-    return desired_angle * rat # todo add speed component
+    angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
+    hold_torque_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0] # Nm
+    hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
+    return hold_torque # todo add speed component
 
   def get_steer_feedforward_function(self):
     if self.CP.flags & BmwFlags.SERVOTRONIC:
@@ -111,7 +111,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kiBP = [5.5, 30.]
     ret.lateralTuning.pid.kpV = [0.5 / CarControllerParams.STEER_MAX, 3.0 / CarControllerParams.STEER_MAX]
     ret.lateralTuning.pid.kiV = [0.0 / CarControllerParams.STEER_MAX, 0.0 / CarControllerParams.STEER_MAX]
-    ret.lateralTuning.pid.kf =   1.0 / CarControllerParams.STEER_MAX # get_steer_feedforward_function
+    ret.lateralTuning.pid.kf =   1.0 / CarControllerParams.STEER_MAX # scales output from get_steer_feedforward_function
 
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [.1]
