@@ -1,11 +1,10 @@
 from cereal import car
-from openpilot.selfdrive.car import DT_CTRL, apply_dist_to_meas_limits
+from openpilot.selfdrive.car import DT_CTRL, apply_dist_to_meas_limits, apply_hysteresis
 from openpilot.selfdrive.car.bmw import bmwcan
 from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
 from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from opendbc.can.packer import CANPacker
-from openpilot.selfdrive.car.helpers import clip
 from openpilot.selfdrive.car.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -36,7 +35,8 @@ class CarController(CarControllerBase):
     self.accel_steady = 0.
     self.last_time_cruise_cmd_sent = 0
     self.last_cruise_speed_delta_req = 0
-    self.cruise_speed_prev = 0
+    self.cruise_speed_with_hyst = 0
+    self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
     self.tx_cruise_stalk_counter = 0
     self.rx_cruise_stalk_counter_last = -1
@@ -52,13 +52,16 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     can_sends = []
 
+    # detect acceleration sign change
+    accel_zero_cross = actuators.accel * self.actuators_accel_last < 0
+
     # *** desired speed model ***
-    if abs(actuators.accel) < 0.1:
+    if accel_zero_cross:
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
-    speed_diff_req = (self.calcDesiredSpeed - CS.out.cruiseState.speed) * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
+    speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
     # *** stalk press rate ***
-    if (actuators.accel < 0.2 or actuators.accel > 0.2) and abs(speed_diff_req) > CC_STEP * 1.5:
+    if (actuators.accel < 0.2 or actuators.accel > 0.2) and abs(speed_diff_req) > CC_STEP:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
       cruise_tick = 0.1   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
     else:
@@ -78,28 +81,21 @@ class CarController(CarControllerBase):
                                or CS.cruise_stalk_resume \
                                or CS.cruise_stalk_cancel
 
-    # check if cruise speed actually changed - this covers changes due to OP and driver's commands
-    cruise_speed_delta = self.cruise_speed_prev - CS.out.cruiseState.speed
-    if cruise_speed_delta != 0:
-      self.last_cruise_speed_delta_req = clip(cruise_speed_delta, -5, 5) # saturate for a display
-    self.cruise_speed_prev = CS.out.cruiseState.speed
-
     time_since_cruise_sent =  (now_nanos - self.last_time_cruise_cmd_sent) / 1e9
 
-    # hysteresis
-    speed_margin_thresh = 0.1
-    hysteresis_timeout = 0.2
-    # hysteresis, CS.out.cruiseState.speed changes in steps
-    if self.last_cruise_speed_delta_req > 0 and actuators.accel > 0.2 and time_since_cruise_sent < hysteresis_timeout:
-      speed_diff_err_up = speed_margin_thresh
-      speed_diff_err_dn =  -CC_STEP
-    elif self.last_cruise_speed_delta_req < 0 and actuators.accel < 0.2 and time_since_cruise_sent < hysteresis_timeout:
-      speed_diff_err_up =  CC_STEP
-      speed_diff_err_dn = -speed_margin_thresh
-    else:
-      speed_diff_err_up = CC_STEP / 2 + speed_margin_thresh
-      speed_diff_err_dn = -CC_STEP / 2
 
+    # *** hysteresis - trend is your friend ***
+    # we want to request +/-1 when speed diff is bigger than 0.5
+    # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
+    # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
+    # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
+    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CC_STEP * 0.9)
+    if not CS.out.cruiseState.enabled:
+      self.cruise_speed_with_hyst = CS.out.vEgo
+    if accel_zero_cross:
+      self.cruise_speed_with_hyst = CS.out.cruiseState.speed
+
+    self.actuators_accel_last = actuators.accel
 
     # *** cruise control cancel signal ***
     # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
@@ -122,12 +118,12 @@ class CarController(CarControllerBase):
         self.last_time_cruise_cmd_sent = now_nanos
         self.last_cruise_speed_delta_req = 0
         print("cancel")
-      elif CC.enabled and speed_diff_req > speed_diff_err_up and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
+      elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
         self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_time_cruise_cmd_sent = now_nanos
         self.last_cruise_speed_delta_req = +1
-      elif CC.enabled and speed_diff_req < speed_diff_err_dn and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
+      elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
         self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_time_cruise_cmd_sent = now_nanos
@@ -159,8 +155,8 @@ class CarController(CarControllerBase):
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
 
-    new_actuators.accel = self.last_cruise_speed_delta_req
     new_actuators.speed = self.calcDesiredSpeed
+    new_actuators.accel = speed_diff_req
 
     self.frame += 1
     return new_actuators, can_sends
