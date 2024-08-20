@@ -1,49 +1,49 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
- <tabbed_widget name="Main Window" parent="main_window">
+ <tabbed_widget parent="main_window" name="Main Window">
   <Tab containers="1" tab_name="CarControlLong">
    <Container>
-    <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
+    <DockSplitter count="4" sizes="0.25;0.25;0.25;0.25" orientation="-">
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Dots">
-       <range top="2.009646" left="11.543440" right="50.896292" bottom="-5.170967"/>
+      <plot style="Dots" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-65.006943" right="59.999830" top="63.618057"/>
        <limitY/>
-       <curve name="Cruise combined TX" color="#00ea06"/>
-       <curve name="speed_diff_req" color="#a3b41f"/>
-       <curve name="Cruise combined RX" color="#0068ff"/>
-       <curve name="/carControl/actuators/accel" color="#9467bd"/>
-       <curve name="/carOutput/actuatorsOutput/accel" color="#952539"/>
+       <curve color="#00ea06" name="Cruise combined TX"/>
+       <curve color="#a3b41f" name="speed_diff_req"/>
+       <curve color="#ff001e" name="Cruise combined RX"/>
+       <curve color="#9467bd" name="/carControl/actuators/accel"/>
+       <curve color="#256195" name="/carOutput/actuatorsOutput/accel"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="55.000000" left="11.543440" right="50.896292" bottom="2.000000"/>
-       <limitY max="55" min="2"/>
-       <curve name="/carState/cruiseState/speed" color="#17becf"/>
-       <curve name="/carState/vEgo" color="#d62728"/>
-       <curve name="carState.vEgo kmh" color="#1ac938"/>
-       <curve name="vCruiseM_S" color="#ced627"/>
-       <curve name="/carOutput/actuatorsOutput/speed" color="#1f77b4"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="2.000000" right="59.999830" top="55.000000"/>
+       <limitY min="2" max="55"/>
+       <curve color="#17becf" name="/carState/cruiseState/speed"/>
+       <curve color="#d62728" name="/carState/vEgo"/>
+       <curve color="#1ac938" name="carState.vEgo kmh"/>
+       <curve color="#ced627" name="vCruiseM_S"/>
+       <curve color="#1f77b4" name="/carOutput/actuatorsOutput/speed"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="LinesAndDots">
-       <range top="1.025000" left="11.543440" right="50.896292" bottom="-0.025000"/>
+      <plot style="LinesAndDots" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-0.025000" right="59.999830" top="1.025000"/>
        <limitY/>
-       <curve name="/carControl/actuators/longControlState" color="#ff7f0e"/>
-       <curve name="/carControl/cruiseControl/cancel" color="#9467bd"/>
-       <curve name="/carControl/enabled" color="#1f77b4"/>
-       <curve name="/carState/cruiseState/enabled" color="#d62728"/>
-       <curve name="/carState/brakePressed" color="#1ac938"/>
-       <curve name="/carState/gasPressed" color="#f14cc1"/>
+       <curve color="#ff7f0e" name="/carControl/actuators/longControlState"/>
+       <curve color="#9467bd" name="/carControl/cruiseControl/cancel"/>
+       <curve color="#1f77b4" name="/carControl/enabled"/>
+       <curve color="#d62728" name="/carState/cruiseState/enabled"/>
+       <curve color="#1ac938" name="/carState/brakePressed"/>
+       <curve color="#f14cc1" name="/carState/gasPressed"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="LinesAndDots">
-       <range top="261.375000" left="11.543440" right="50.896292" bottom="-6.375000"/>
+      <plot style="LinesAndDots" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="19.375251" right="59.999830" top="107.088409"/>
        <limitY/>
-       <curve name="carState.vEgo kmh" color="#1ac938"/>
-       <curve name="/controlsState/vCruiseCluster" color="#ff7f0e"/>
+       <curve color="#1ac938" name="carState.vEgo kmh"/>
+       <curve color="#ff7f0e" name="/controlsState/vCruiseCluster"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -51,33 +51,33 @@
   </Tab>
   <Tab containers="1" tab_name="CarControlLat">
    <Container>
-    <DockSplitter sizes="0.333506;0.332987;0.333506" orientation="-" count="3">
+    <DockSplitter count="3" sizes="0.333506;0.332987;0.333506" orientation="-">
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="594.733218" left="0.003080" right="59.983040" bottom="-593.189639"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-194.941749" right="59.999830" top="15.477671"/>
        <limitY/>
-       <curve name="/carState/steeringAngleDeg" color="#9467bd"/>
-       <curve name="/controlsState/lateralControlState/pidState/steeringAngleDeg" color="#1ac938"/>
-       <curve name="/controlsState/lateralControlState/pidState/steeringAngleDesiredDeg" color="#ff7f0e"/>
+       <curve color="#9467bd" name="/carState/steeringAngleDeg"/>
+       <curve color="#1ac938" name="/controlsState/lateralControlState/pidState/steeringAngleDeg"/>
+       <curve color="#ff7f0e" name="/controlsState/lateralControlState/pidState/steeringAngleDesiredDeg"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="12.323795" left="11.543440" right="50.896292" bottom="-1.275610"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-0.348567" right="59.999830" top="1.032892"/>
        <limitY/>
-       <curve name="/carState/steeringTorqueEps" color="#d62728"/>
-       <curve name="/carControl/actuators/steer" color="#1ac938"/>
-       <curve name="/carOutput/actuatorsOutput/steer" color="#9467bd"/>
-       <curve name="/carOutput/actuatorsOutput/steerOutputCan" color="#278cd6"/>
+       <curve color="#d62728" name="/carState/steeringTorqueEps"/>
+       <curve color="#1ac938" name="/carControl/actuators/steer"/>
+       <curve color="#9467bd" name="/carOutput/actuatorsOutput/steer"/>
+       <curve color="#278cd6" name="/carOutput/actuatorsOutput/steerOutputCan"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="7.572239" left="11.543440" right="50.896292" bottom="-2.109788"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-1.295696" right="59.999830" top="15.303726"/>
        <limitY/>
-       <curve name="/controlsState/lateralControlState/pidState/p" color="#1ac938"/>
-       <curve name="/controlsState/lateralControlState/pidState/i" color="#ff7f0e"/>
-       <curve name="/controlsState/lateralControlState/pidState/f" color="#f14cc1"/>
+       <curve color="#1ac938" name="/controlsState/lateralControlState/pidState/p"/>
+       <curve color="#ff7f0e" name="/controlsState/lateralControlState/pidState/i"/>
+       <curve color="#f14cc1" name="/controlsState/lateralControlState/pidState/f"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -85,28 +85,28 @@
   </Tab>
   <Tab containers="1" tab_name="SteerLiveParam">
    <Container>
-    <DockSplitter sizes="0.333506;0.332987;0.333506" orientation="-" count="3">
+    <DockSplitter count="3" sizes="0.345974;0.345974;0.308052" orientation="-">
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="18.444182" left="11.543440" right="50.896292" bottom="18.409629"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="18.242423" right="59.999830" top="18.313051"/>
        <limitY/>
-       <curve name="/liveParameters/steerRatio" color="#1ac938"/>
+       <curve color="#1ac938" name="/liveParameters/steerRatio"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="188.294526" left="11.543440" right="50.896292" bottom="-15.254506"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-118.441401" right="59.999830" top="9.777404"/>
        <limitY/>
-       <curve name="/liveParameters/angleOffsetDeg" color="#0e0fff"/>
-       <curve name="/liveParameters/angleOffsetAverageDeg" color="#f14cc1"/>
-       <curve name="/carState/steeringAngleDeg" color="#ff002f"/>
+       <curve color="#0e0fff" name="/liveParameters/angleOffsetDeg"/>
+       <curve color="#f14cc1" name="/liveParameters/angleOffsetAverageDeg"/>
+       <curve color="#ff002f" name="/carState/steeringAngleDeg"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="15.501973" left="11.543440" right="50.896292" bottom="-0.378097"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="5.766033" right="59.999830" top="14.002027"/>
        <limitY/>
-       <curve name="/carState/vEgo" color="#d62728"/>
+       <curve color="#d62728" name="/carState/vEgo"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -114,32 +114,35 @@
   </Tab>
   <Tab containers="1" tab_name="CruiseStalksCounter">
    <Container>
-    <DockSplitter sizes="0.333506;0.332987;0.333506" orientation="-" count="3">
+    <DockSplitter count="3" sizes="0.333506;0.332987;0.333506" orientation="-">
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="14.350000" left="11.543440" right="50.896292" bottom="-0.350000"/>
+      <plot style="LinesAndDots" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-0.350000" right="59.999830" top="14.350000"/>
        <limitY/>
-       <curve name="/can/0/CruiseControlStalk/Counter_404" color="#1f77b4"/>
+       <curve color="#22b41f" name="/can/0/CruiseControlStalk/Counter_404"/>
+       <curve color="#b41f5b" name="/can/1/CruiseControlStalk/Counter_404"/>
+       <curve color="#f14cc1" name="/sendcan/1/CruiseControlStalk/Counter_404"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="1.000000" left="0.000000" right="1.000000" bottom="0.000000"/>
+      <plot style="LinesAndDots" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="-5.250000" right="59.999830" top="5.250000"/>
        <limitY/>
+       <curve color="#2dd627" name="Cruise combined TX"/>
+       <curve color="#c91a3b" name="Cruise combined RX"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range top="1.150000" left="11.543440" right="50.896292" bottom="-5.150000"/>
+      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+       <range left="0.000000" bottom="6.222222" right="59.999830" top="71.555556"/>
        <limitY/>
-       <curve name="Cruise combined TX" color="#ff7f0e"/>
-       <curve name="Cruise combined RX" color="#f14cc1"/>
+       <curve color="#9467bd" name="/carState/cruiseState/speed"/>
       </plot>
      </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="1"/>
+  <currentTabIndex index="0"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->
@@ -150,13 +153,82 @@
  </Plugins>
  <!-- - - - - - - - - - - - - - - -->
  <previouslyLoaded_Datafiles>
-  <fileInfo prefix="" filename="../tmpzpx8bxh2.rlog">
+  <fileInfo filename="../tmp1iypcx_b.rlog" prefix="">
    <selected_datasources value=""/>
-   <plugin ID="DataLoad Rlog"/>
   </fileInfo>
  </previouslyLoaded_Datafiles>
  <!-- - - - - - - - - - - - - - - -->
  <customMathEquations>
+  <snippet name="vCruiseM_S">
+   <global>MS_TO_KPH = 3.6</global>
+   <function>return value/3.6</function>
+   <linked_source>/controlsState/vCruise</linked_source>
+  </snippet>
+  <snippet name="Cruise combined TX">
+   <global></global>
+   <function>return value*0 + v1 - v2</function>
+   <linked_source>/sendcan/1/CruiseControlStalk/cancel</linked_source>
+   <additional_sources>
+    <v1>/sendcan/1/CruiseControlStalk/plus1</v1>
+    <v2>/sendcan/1/CruiseControlStalk/minus1</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Actual lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/curvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Cruise combined RX">
+   <global></global>
+   <function>return value + v1 - v2 + 5 * v3 - 5 * v4</function>
+   <linked_source>/can/1/CruiseControlStalk/cancel</linked_source>
+   <additional_sources>
+    <v1>/can/1/CruiseControlStalk/plus1</v1>
+    <v2>/can/1/CruiseControlStalk/minus1</v2>
+    <v3>/can/1/CruiseControlStalk/plus5</v3>
+    <v4>/can/1/CruiseControlStalk/minus5</v4>
+   </additional_sources>
+  </snippet>
+  <snippet name="carState.vEgo kmh">
+   <global></global>
+   <function>return value * 3.6</function>
+   <linked_source>/carState/vEgo</linked_source>
+  </snippet>
+  <snippet name="carState.vEgo mph">
+   <global></global>
+   <function>return value * 2.23694</function>
+   <linked_source>/carState/vEgo</linked_source>
+  </snippet>
+  <snippet name="Desired lateral accel (roll compensated)">
+   <global></global>
+   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
+   <linked_source>/controlsState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+    <v2>/liveParameters/roll</v2>
+   </additional_sources>
+  </snippet>
+  <snippet name="Zero">
+   <global></global>
+   <function>return (0)</function>
+   <linked_source>/carState/canValid</linked_source>
+  </snippet>
+  <snippet name="speed_diff_req">
+   <global>MS_TO_KPH = 3.6</global>
+   <function>ret = (value - v1) * MS_TO_KPH
+if (v1 == 70) then
+ret = 0
+end
+return ret</function>
+   <linked_source>/carOutput/actuatorsOutput/speed</linked_source>
+   <additional_sources>
+    <v1>/carState/cruiseState/speed</v1>
+   </additional_sources>
+  </snippet>
   <snippet name="calcDesiredSpeed">
    <global>prevX = 0
 calcDesiredSpeed = 0
@@ -181,76 +253,6 @@ return calcDesiredSpeed</function>
    <additional_sources>
     <v1>/carState/vEgo</v1>
    </additional_sources>
-  </snippet>
-  <snippet name="speed_diff_req">
-   <global>MS_TO_KPH = 3.6</global>
-   <function>ret = (value - v1) * MS_TO_KPH
-if (v1 == 70) then
-ret = 0
-end
-return ret</function>
-   <linked_source>/carOutput/actuatorsOutput/speed</linked_source>
-   <additional_sources>
-    <v1>/carState/cruiseState/speed</v1>
-   </additional_sources>
-  </snippet>
-  <snippet name="Zero">
-   <global></global>
-   <function>return (0)</function>
-   <linked_source>/carState/canValid</linked_source>
-  </snippet>
-  <snippet name="Desired lateral accel (roll compensated)">
-   <global></global>
-   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
-   <linked_source>/controlsState/desiredCurvature</linked_source>
-   <additional_sources>
-    <v1>/carState/vEgo</v1>
-    <v2>/liveParameters/roll</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="carState.vEgo mph">
-   <global></global>
-   <function>return value * 2.23694</function>
-   <linked_source>/carState/vEgo</linked_source>
-  </snippet>
-  <snippet name="carState.vEgo kmh">
-   <global></global>
-   <function>return value * 3.6</function>
-   <linked_source>/carState/vEgo</linked_source>
-  </snippet>
-  <snippet name="Cruise combined RX">
-   <global></global>
-   <function>return value + v1 - v2 + 5 * v3 - 5 * v4</function>
-   <linked_source>/can/1/CruiseControlStalk/cancel</linked_source>
-   <additional_sources>
-    <v1>/can/1/CruiseControlStalk/plus1</v1>
-    <v2>/can/1/CruiseControlStalk/minus1</v2>
-    <v3>/can/1/CruiseControlStalk/plus5</v3>
-    <v4>/can/1/CruiseControlStalk/minus5</v4>
-   </additional_sources>
-  </snippet>
-  <snippet name="Actual lateral accel (roll compensated)">
-   <global></global>
-   <function>return (value * v1 ^ 2) - (v2 * 9.81)</function>
-   <linked_source>/controlsState/curvature</linked_source>
-   <additional_sources>
-    <v1>/carState/vEgo</v1>
-    <v2>/liveParameters/roll</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="Cruise combined TX">
-   <global></global>
-   <function>return value*0 + v1 - v2</function>
-   <linked_source>/sendcan/1/CruiseControlStalk/cancel</linked_source>
-   <additional_sources>
-    <v1>/sendcan/1/CruiseControlStalk/plus1</v1>
-    <v2>/sendcan/1/CruiseControlStalk/minus1</v2>
-   </additional_sources>
-  </snippet>
-  <snippet name="vCruiseM_S">
-   <global>MS_TO_KPH = 3.6</global>
-   <function>return value/3.6</function>
-   <linked_source>/controlsState/vCruise</linked_source>
   </snippet>
  </customMathEquations>
  <snippets/>
