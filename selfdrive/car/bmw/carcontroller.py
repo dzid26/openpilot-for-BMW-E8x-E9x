@@ -12,7 +12,7 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
 
 # Accel limits
-ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
+ACCEL_HYST_GAP = CC_STEP * 0.9  # shall be between half or full crusie step
 ACCEL_MAX = 4  # cruise control rapid clicking
 ACCEL_SLOW = 3 # cruise control hold up
 DECEL_SLOW = -2   # cruise control decrease speed slowly
@@ -47,11 +47,14 @@ class CarController(CarControllerBase):
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
       self.cruise_bus = CanBus.F_CAN
 
+
     self.packer = CANPacker(dbc_name)
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
     can_sends = []
+
+    self.CC_units = (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
 
     # detect acceleration sign change
     accel_zero_cross = actuators.accel * self.actuators_accel_last < 0
@@ -62,7 +65,7 @@ class CarController(CarControllerBase):
     # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
     # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
     # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
-    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CC_STEP * 0.9)
+    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.CC_units)
     if not CS.out.cruiseState.enabled:
       self.cruise_speed_with_hyst = CS.out.vEgo
     if accel_zero_cross:
@@ -72,7 +75,7 @@ class CarController(CarControllerBase):
     if accel_zero_cross:
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
-    speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
+    speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
     # *** stalk press rate ***
     if (actuators.accel < -0.2 or actuators.accel > 0.2) and abs(speed_diff_req) > CC_STEP:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
