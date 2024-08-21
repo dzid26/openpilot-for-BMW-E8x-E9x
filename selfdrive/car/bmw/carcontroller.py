@@ -54,6 +54,18 @@ class CarController(CarControllerBase):
 
     # detect acceleration sign change
     accel_zero_cross = actuators.accel * self.actuators_accel_last < 0
+    self.actuators_accel_last = actuators.accel
+
+    # *** hysteresis - trend is your friend ***
+    # we want to request +/-1 when speed diff is bigger than 0.5
+    # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
+    # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
+    # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
+    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CC_STEP * 0.9)
+    if not CS.out.cruiseState.enabled:
+      self.cruise_speed_with_hyst = CS.out.vEgo
+    if accel_zero_cross:
+      self.cruise_speed_with_hyst = CS.out.cruiseState.speed
 
     # *** desired speed model ***
     if accel_zero_cross:
@@ -84,19 +96,6 @@ class CarController(CarControllerBase):
 
     time_since_cruise_sent =  (now_nanos - self.last_cruise_cmd_timestamp) / 1e9
 
-
-    # *** hysteresis - trend is your friend ***
-    # we want to request +/-1 when speed diff is bigger than 0.5
-    # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
-    # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
-    # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
-    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CC_STEP * 0.9)
-    if not CS.out.cruiseState.enabled:
-      self.cruise_speed_with_hyst = CS.out.vEgo
-    if accel_zero_cross:
-      self.cruise_speed_with_hyst = CS.out.cruiseState.speed
-
-    self.actuators_accel_last = actuators.accel
 
     # *** cruise control cancel signal ***
     # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
