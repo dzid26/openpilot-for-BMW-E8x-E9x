@@ -9,7 +9,8 @@ from openpilot.selfdrive.car.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-CC_STEP = 1 # cruise single click jump - either km or miles
+CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
+
 # Accel limits
 ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
 ACCEL_MAX = 4  # cruise control rapid clicking
@@ -122,12 +123,12 @@ class CarController(CarControllerBase):
         self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
-        self.last_cruise_speed_delta_req = +1
+        self.last_cruise_speed_delta_req = +CC_STEP
       elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
         self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
-        self.last_cruise_speed_delta_req = -1
+        self.last_cruise_speed_delta_req = -CC_STEP
 
 
 
