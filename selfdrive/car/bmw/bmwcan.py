@@ -60,11 +60,11 @@ def calc_checksum_cruise(work_data: bytearray):# 0x194 this checksum is special 
   return calc_checksum_8bit(work_data, 0)
 
 
-def create_accel_command(packer, action: CruiseStalk, bus: int, frame):
+def create_accel_command(packer, action: CruiseStalk, bus: int, cnt):
     values = {
         "setMe_0xFC": 0xFC,
         "requests_0xF": 0xF,
-        "Counter_404": frame % 0xF # counts from 0 to 14
+        "Counter_404": cnt % 0xF # counts from 0 to 14
         }
     values[action.value] = 1
 

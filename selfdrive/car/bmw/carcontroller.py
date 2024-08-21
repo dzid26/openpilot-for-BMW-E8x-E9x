@@ -85,7 +85,7 @@ class CarController(CarControllerBase):
 
     # *** cruise control counter handling ***
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
-    if self.rx_cruise_stalk_counter_last != CS.cruise_stalk_counter:
+    if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
       self.tx_cruise_stalk_counter = CS.cruise_stalk_counter + 1
       # stock message was sent some time in between control samples:
       self.last_cruise_cmd_timestamp = now_nanos - DT_CTRL / 2 * 1e9 # assume half of DT_CTRL, #todo can be replaced with precise ts_nanos from can parser

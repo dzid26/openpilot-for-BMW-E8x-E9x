@@ -127,7 +127,7 @@ class CarState(CarStateBase):
     self.cruise_stalk_resume = cruiseControlStalkMsg['resume'] != 0
     self.cruise_stalk_cancel = cruiseControlStalkMsg['cancel'] != 0
     self.cruise_stalk_cancel_up = cruiseControlStalkMsg['cancel_lever_up'] != 0
-    self.cruise_stalk_counter = cruiseControlStalkMsg['Counter_404'] != 0
+    self.cruise_stalk_counter = cruiseControlStalkMsg['Counter_404']
     self.cruise_stalk_cancel_dn = self.cruise_stalk_cancel and not self.cruise_stalk_cancel_up
 
 
