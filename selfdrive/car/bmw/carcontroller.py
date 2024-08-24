@@ -65,7 +65,7 @@ class CarController(CarControllerBase):
     # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
     # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
     # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
-    apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.CC_units)
+    self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.CC_units)
     if not CS.out.cruiseState.enabled:
       self.cruise_speed_with_hyst = CS.out.vEgo
     if accel_zero_cross:
