@@ -47,14 +47,14 @@ class CarInterface(CarInterfaceBase):
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
   def get_steer_feedforward_servotronic(desired_angle, v_ego): # accounts for steering rack ratio and/or caster nonlinearities https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-15#post-131271
     angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
-    hold_torque_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0] # Nm
+    hold_torque_V  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
     hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
     return hold_torque # todo add speed component
 
   @staticmethod
   def get_steer_feedforward(desired_angle, v_ego):
     angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
-    hold_torque_V  = [-12.0, -5.7, -5.0, -4.5, -4.0, -3.3, -2.5,  2.5,  3.3,  4.0,  4.5,  5.0,  5.7, 12.0] # Nm
+    hold_torque_V  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
     hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
     return hold_torque # todo add speed component
 
@@ -109,8 +109,8 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.init('pid')
     ret.lateralTuning.pid.kpBP = [5.5, 30.]
     ret.lateralTuning.pid.kiBP = [5.5, 30.]
-    ret.lateralTuning.pid.kpV = [0.5 / CarControllerParams.STEER_MAX, 3.0 / CarControllerParams.STEER_MAX]
-    ret.lateralTuning.pid.kiV = [0.0 / CarControllerParams.STEER_MAX, 0.0 / CarControllerParams.STEER_MAX]
+    ret.lateralTuning.pid.kpV = [0.2 / CarControllerParams.STEER_MAX, 0.8 / CarControllerParams.STEER_MAX]
+    ret.lateralTuning.pid.kiV = [0.0 / CarControllerParams.STEER_MAX, 0.05 / CarControllerParams.STEER_MAX]
     ret.lateralTuning.pid.kf =   1.0 / CarControllerParams.STEER_MAX # scales output from get_steer_feedforward_function
 
     ret.longitudinalTuning.kpBP = [0.]
