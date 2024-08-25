@@ -2,7 +2,7 @@ from cereal import car
 from openpilot.selfdrive.car import DT_CTRL, apply_dist_to_meas_limits, apply_hysteresis
 from openpilot.selfdrive.car.bmw import bmwcan
 from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
-from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
+from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags, CruiseSettings
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car.conversions import Conversions as CV
@@ -108,8 +108,8 @@ class CarController(CarControllerBase):
     if not CC.enabled and self.CC_enabled_prev:
       self.CC_cancel = True
     # if we need to go below cruise speed, request cancel and coast while steering enabled
-    if CS.out.cruiseState.speed - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
-      and CS.out.vEgo - self.minCruiseSpeed < 0.1 and CS.out.vEgo - self.calcDesiredSpeed > 1:
+    if CS.out.cruiseState.speedCluster - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
+      and CS.out.vEgoCluster - self.minCruiseSpeed < 0.1 and CS.out.vEgo - self.calcDesiredSpeed > 1:
       self.CC_cancel = True
     # keep requesting cancel until the cruise is disabled
     if not CS.out.cruiseState.enabled:

@@ -3,7 +3,7 @@ from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.bmw.values import DBC, CanBus, BmwFlags
+from openpilot.selfdrive.car.bmw.values import DBC, CanBus, BmwFlags, CruiseSettings
 from openpilot.common.params import Params
 
 class CarState(CarStateBase):
@@ -13,6 +13,8 @@ class CarState(CarStateBase):
     self.shifter_values = can_define.dv["TransmissionDataDisplay"]['ShiftLeverPosition']
     self.steer_angle_delta = 0.
     self.gas_kickdown = False
+
+    self.cluster_min_speed = CruiseSettings.CLUSTER_OFFSET
 
     self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo set is_metric in _get_params somehow
     self.cruise_stalk_plus = False
@@ -68,6 +70,7 @@ class CarState(CarStateBase):
     )
     ret.vEgoRaw = cp_PT.vl['Speed']["VehicleSpeed"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
+    ret.vEgoCluster = ret.vEgo + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS
     ret.standstill = not cp_PT.vl['Speed']["MovingForward"] and not cp_PT.vl['Speed']["MovingReverse"]
 
     ret.steeringRateDeg = (cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed'])
@@ -119,7 +122,7 @@ class CarState(CarStateBase):
       ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
-
+    ret.cruiseState.speedCluster = ret.cruiseState.speed + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS #For logging. Doesn't do anything with pcmCruise = False
     self.cruise_stalk_plus = cruiseControlStalkMsg['plus1'] != 0
     self.cruise_stalk_minus = cruiseControlStalkMsg['minus1'] != 0
     self.cruise_stalk_plus5 = cruiseControlStalkMsg['plus5'] != 0

@@ -146,9 +146,9 @@ class CarInterface(CarInterfaceBase):
 
     # events
     events = self.create_common_events(ret, pcm_enable=True)
-    if ret.vEgo < self.CP.minEnableSpeed:
+    if ret.vEgoCluster < self.CP.minEnableSpeed:
       events.add(EventName.belowEngageSpeed)
-      if self.CS.CP.minEnableSpeed > 0 and c.actuators.accel > 0.2:
+      if c.actuators.accel > 0.2:
           events.add(EventName.speedTooLow) # can't restart cruise anymore
 
     # *** disable/enable OpenPilot on resume button press ***

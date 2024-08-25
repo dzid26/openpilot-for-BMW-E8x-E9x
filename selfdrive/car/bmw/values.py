@@ -24,6 +24,9 @@ class BmwFlags(IntFlag):
   ACTIVE_CRUISE_CONTROL_NO_LDM = 2 ** 5   # no LDM/ACC - DSC, DME, KOMBI coded to $541
   SERVOTRONIC = 2 ** 6                    # ServoTonic $216A - TODO: needs firmware query
 
+class CruiseSettings:
+  CLUSTER_OFFSET = 2 # kph
+
 class CanBus:
   PT_CAN =    0
   SERVO_CAN = 1 # required for steering
