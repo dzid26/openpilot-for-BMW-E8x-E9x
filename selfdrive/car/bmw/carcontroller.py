@@ -109,7 +109,7 @@ class CarController(CarControllerBase):
       self.CC_cancel = True
     # if we need to go below cruise speed, request cancel and coast while steering enabled
     if CS.out.cruiseState.speedCluster - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
-      and CS.out.vEgoCluster - self.minCruiseSpeed < 0.1 and CS.out.vEgo - self.calcDesiredSpeed > 1:
+      and CS.out.vEgoCluster - self.minCruiseSpeed < 0.5 and CS.out.vEgo - self.calcDesiredSpeed > 1:
       self.CC_cancel = True
     # keep requesting cancel until the cruise is disabled
     if not CS.out.cruiseState.enabled:
