@@ -77,9 +77,9 @@ class CarController(CarControllerBase):
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
     # *** stalk press rate ***
-    if (actuators.accel < -0.2 or actuators.accel > 0.2) and abs(speed_diff_req) > CC_STEP:
+    if (actuators.accel < -0.4 or actuators.accel > 0.4) and abs(speed_diff_req) > CC_STEP:
       # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
-      cruise_tick = 0.1   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
+      cruise_tick = STOCK_CRUISE_STALK_HOLD_TICK   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
     else:
       cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
 
