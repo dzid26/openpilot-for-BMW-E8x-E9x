@@ -20,7 +20,7 @@ DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
 STOCK_CRUISE_STALK_TICK = 0.2 # sample rate of stock cruise stalk messages when not pressed
-STOCK_CRUISE_STALK_HOLD_TICK = 0.05 # sample rate of stock cruise stalk messages when pressed
+STOCK_CRUISE_STALK_HOLD_TICK = 0.01 # sample rate of stock cruise stalk messages when pressed
 
 
 class CarController(CarControllerBase):
