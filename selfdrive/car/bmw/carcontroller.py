@@ -2,7 +2,7 @@ from cereal import car
 from openpilot.selfdrive.car import DT_CTRL, apply_dist_to_meas_limits, apply_hysteresis
 from openpilot.selfdrive.car.bmw import bmwcan
 from openpilot.selfdrive.car.bmw.bmwcan import SteeringModes, CruiseStalk
-from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags, CruiseSettings
+from openpilot.selfdrive.car.bmw.values import CarControllerParams, CanBus, BmwFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car.conversions import Conversions as CV
@@ -51,6 +51,7 @@ class CarController(CarControllerBase):
     self.packer = CANPacker(dbc_name)
 
   def update(self, CC, CS, now_nanos):
+
     actuators = CC.actuators
     can_sends = []
 
@@ -84,9 +85,14 @@ class CarController(CarControllerBase):
       cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
 
     # *** cruise control counter handling ***
+    def increase_counter():
+      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+      # avoid counter clash with a potential upcoming message from stock cruise
+      if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
-      self.tx_cruise_stalk_counter = CS.cruise_stalk_counter + 1
+      self.tx_cruise_stalk_counter = CS.cruise_stalk_counter
       # stock message was sent some time in between control samples:
       self.last_cruise_cmd_timestamp = now_nanos - DT_CTRL / 2 * 1e9 # assume half of DT_CTRL, #todo can be replaced with precise ts_nanos from can parser
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
@@ -117,18 +123,18 @@ class CarController(CarControllerBase):
 
     if not cruise_stalk_human_pressing:
       if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        increase_counter()
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
         self.last_cruise_speed_delta_req = 0
         print("cancel")
       elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        increase_counter()
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
         self.last_cruise_speed_delta_req = +CC_STEP
       elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        increase_counter()
         can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
         self.last_cruise_speed_delta_req = -CC_STEP
