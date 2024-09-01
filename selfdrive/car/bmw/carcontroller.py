@@ -19,8 +19,10 @@ DECEL_SLOW = -2   # cruise control decrease speed slowly
 DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
-STOCK_CRUISE_STALK_TICK = 0.2 # sample rate of stock cruise stalk messages when not pressed
-STOCK_CRUISE_STALK_HOLD_TICK = 0.01 # sample rate of stock cruise stalk messages when pressed
+# stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
+CRUISE_STALK_TICK = 0.2 # we will send at 5Hz in between stock messages to emulate single presses
+# stock cruise stalk CAN frequency when stalk is pressed is 20Hz
+CRUISE_STALK_HOLD_TICK = 0.01 # we will send at 100Hz to make DSC ignore stock messages and emulate held stalk
 
 
 class CarController(CarControllerBase):
@@ -35,7 +37,6 @@ class CarController(CarControllerBase):
     self.apply_steer_last = 0
     self.accel_steady = 0.
     self.last_cruise_cmd_timestamp = 0
-    self.last_cruise_speed_delta_req = 0
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
@@ -49,6 +50,7 @@ class CarController(CarControllerBase):
 
 
     self.packer = CANPacker(dbc_name)
+
 
   def update(self, CC, CS, now_nanos):
 
@@ -77,19 +79,7 @@ class CarController(CarControllerBase):
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
-    # *** stalk press rate ***
-    if (actuators.accel < -0.4 or actuators.accel > 0.4) and abs(speed_diff_req) > CC_STEP:
-      # actuators.accel values ^^ inspired by C0F_VERZOEG_POS_FEIN, C0F_VERZOEG_NEG_FEIN from NCSDummy
-      cruise_tick = STOCK_CRUISE_STALK_HOLD_TICK   # emulate held stalk (keep sending messages at 100Hz) to make bmw brake or accelerate hard
-    else:
-      cruise_tick = STOCK_CRUISE_STALK_TICK # default rate when not holding stalk
 
-    # *** cruise control counter handling ***
-    def increase_counter():
-      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
-      # avoid counter clash with a potential upcoming message from stock cruise
-      if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
       self.tx_cruise_stalk_counter = CS.cruise_stalk_counter
@@ -121,23 +111,30 @@ class CarController(CarControllerBase):
     if not CS.out.cruiseState.enabled:
       self.CC_cancel = False
 
+    # *** send cruise control stalk message ***
+    def send_cruise_cmd(self, cmd, hold=False):
+      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+      # avoid counter clash with a potential upcoming message from stock cruise
+      if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+      if time_since_cruise_sent > (CRUISE_STALK_HOLD_TICK if hold else CRUISE_STALK_TICK): # send faster to emulate held stalk
+        can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter))
+        self.last_cruise_cmd_timestamp = now_nanos
+
     if not cruise_stalk_human_pressing:
-      if self.CC_cancel and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-        increase_counter()
-        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.cancel, self.cruise_bus, self.tx_cruise_stalk_counter))
-        self.last_cruise_cmd_timestamp = now_nanos
-        self.last_cruise_speed_delta_req = 0
+      if self.CC_cancel and CS.out.cruiseState.enabled:
+        send_cruise_cmd(CruiseStalk.cancel)
         print("cancel")
-      elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick:
-        increase_counter()
-        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.plus1, self.cruise_bus, self.tx_cruise_stalk_counter))
-        self.last_cruise_cmd_timestamp = now_nanos
-        self.last_cruise_speed_delta_req = +CC_STEP
-      elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and time_since_cruise_sent > cruise_tick and not CS.out.gasPressed:
-        increase_counter()
-        can_sends.append(bmwcan.create_accel_command(self.packer, CruiseStalk.minus1, self.cruise_bus, self.tx_cruise_stalk_counter))
-        self.last_cruise_cmd_timestamp = now_nanos
-        self.last_cruise_speed_delta_req = -CC_STEP
+      elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled:
+        if actuators.accel > 0.4:
+          send_cruise_cmd(CruiseStalk.plus1, hold=True) # up to 0.8 m/s2
+        else:
+          send_cruise_cmd(CruiseStalk.plus1)
+      elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and not CS.out.gasPressed:
+        if actuators.accel < -0.4:
+          send_cruise_cmd(CruiseStalk.minus1, hold=True)
+        else:
+          send_cruise_cmd(CruiseStalk.minus1)
 
 
 
