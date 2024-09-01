@@ -126,13 +126,17 @@ class CarController(CarControllerBase):
         send_cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled:
-        if actuators.accel > 0.4:
+        if actuators.accel > 0.7:
+          send_cruise_cmd(CruiseStalk.plus5, hold=True) # up to 1.2 m/s2
+        elif actuators.accel > 0.4:
           send_cruise_cmd(CruiseStalk.plus1, hold=True) # up to 0.8 m/s2
         else:
           send_cruise_cmd(CruiseStalk.plus1)
       elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and not CS.out.gasPressed:
-        if actuators.accel < -0.4:
-          send_cruise_cmd(CruiseStalk.minus1, hold=True)
+        if actuators.accel < -0.7:
+          send_cruise_cmd(CruiseStalk.minus5, hold=True) # down to -1.4 m/s2
+        elif actuators.accel < -0.3:
+          send_cruise_cmd(CruiseStalk.minus1, hold=True) # down to -0.8 m/s2
         else:
           send_cruise_cmd(CruiseStalk.minus1)
 
