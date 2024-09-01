@@ -84,14 +84,16 @@ class CarState(CarStateBase):
 
     self.dtc_mode = cp_PT.vl['StatusDSC_KCAN']['DTC_on'] != 0 # drifty traction control ;)
 
+    # other buttons help determine driver is paying attention in case the face is not visible
     self.otherButtons = \
       cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
       cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0 or \
+      cp_PT.vl["SteeringButtons"]['VoiceControl'] !=0 or \
       self.prev_gasPressed and not ret.gasPressed # treat gas pedal tap as a button - button events indicate driver engagement - useful if face not visible
-      # TODO: add other buttons (lights, gear, DTC, etc)
 
-    # emulate driver steering torque - allows lane change assist on blinker hold
-    ret.steeringPressed = ret.gasPressed # E-series doesn't have torque sensor - tapping the gas while using a blinker confirms driver intention to change lane
+    # E-series doesn't have torque sensor
+    # use Voice button or gas pedal to fake steeringPressed to confirm a lane change
+    ret.steeringPressed = cp_PT.vl["SteeringButtons"]['VoiceControl'] !=0 or ret.gasPressed
     if ret.steeringPressed and ret.leftBlinker:
       ret.steeringTorque = 1
     elif ret.steeringPressed and  ret.rightBlinker:
