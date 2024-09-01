@@ -114,7 +114,9 @@ class CarController(CarControllerBase):
       self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
       # avoid counter clash with a potential upcoming message from stock cruise
       if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
+        # avoid clashing with upcoming stock message
+        # sometimes upcoming stock message is overshadowed by us, so also avoid clashing with one after that
+        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 2
       if time_since_cruise_sent > (CRUISE_STALK_HOLD_TICK if hold else CRUISE_STALK_TICK): # send faster to emulate held stalk
         can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
