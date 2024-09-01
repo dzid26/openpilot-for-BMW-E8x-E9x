@@ -9,10 +9,11 @@ from openpilot.selfdrive.car.conversions import Conversions as CV
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
+# DO NOT CHANGE: Cruise control step size
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
 
 # Accel limits
-ACCEL_HYST_GAP = CC_STEP * 0.9  # shall be between half or full crusie step
+ACCEL_HYST_GAP = CC_STEP * 0.9  # between 0 and CC_STEP
 ACCEL_MAX = 4  # cruise control rapid clicking
 ACCEL_SLOW = 3 # cruise control hold up
 DECEL_SLOW = -2   # cruise control decrease speed slowly
@@ -64,12 +65,9 @@ class CarController(CarControllerBase):
     self.actuators_accel_last = actuators.accel
 
     # *** hysteresis - trend is your friend ***
-    # we want to request +/-1 when speed diff is bigger than 0.5
-    # cruiseState.speed always changes by CC_STEP, which then would cause oscillations
-    # a minimum hysteresis of CC_STEP * 0.5 is required to avoid this
-    # a larger hysteresis makes next request to be sent quicker if the speed change continues in the same direction
+    # avoids cruise speed toggling and biases next request toward the direction of the previous one
     self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.CC_units)
-    if not CS.out.cruiseState.enabled:
+    if not CS.out.cruiseState.enabled or CS.out.gasPressed:
       self.cruise_speed_with_hyst = CS.out.vEgo
     if accel_zero_cross:
       self.cruise_speed_with_hyst = CS.out.cruiseState.speed
