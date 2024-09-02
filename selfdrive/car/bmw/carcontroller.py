@@ -11,6 +11,8 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 # DO NOT CHANGE: Cruise control step size
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
+CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
+CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
 # Accel limits
 ACCEL_HYST_GAP = CC_STEP * 0.9  # between 0 and CC_STEP
@@ -20,10 +22,8 @@ DECEL_SLOW = -2   # cruise control decrease speed slowly
 DECEL_MIN = -6  # cruise control hold down
 ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
 
-# stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
-CRUISE_STALK_TICK = 0.2 # we will send at 5Hz in between stock messages to emulate single presses
-# stock cruise stalk CAN frequency when stalk is pressed is 20Hz
-CRUISE_STALK_HOLD_TICK = 0.01 # we will send at 100Hz to make DSC ignore stock messages and emulate held stalk
+CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
+CRUISE_STALK_HOLD_TICK = CRUISE_STALK_HOLD_TICK_STOCK # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
 
 
 class CarController(CarControllerBase):
@@ -37,7 +37,8 @@ class CarController(CarControllerBase):
     # redundant safety check with the board
     self.apply_steer_last = 0
     self.accel_steady = 0.
-    self.last_cruise_cmd_timestamp = 0
+    self.last_cruise_rx_timestamp = 0 # stock cruise buttons
+    self.last_cruise_tx_timestamp = 0 # openpilot commands
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
@@ -82,7 +83,7 @@ class CarController(CarControllerBase):
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
       self.tx_cruise_stalk_counter = CS.cruise_stalk_counter
       # stock message was sent some time in between control samples:
-      self.last_cruise_cmd_timestamp = now_nanos - DT_CTRL / 2 * 1e9 # assume half of DT_CTRL, #todo can be replaced with precise ts_nanos from can parser
+      self.last_cruise_rx_timestamp = now_nanos #todo can be replaced with precise ts_nanos from can parser
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
 
     cruise_stalk_human_pressing = CS.cruise_stalk_plus \
@@ -91,8 +92,6 @@ class CarController(CarControllerBase):
                                or CS.cruise_stalk_minus5 \
                                or CS.cruise_stalk_resume \
                                or CS.cruise_stalk_cancel
-
-    time_since_cruise_sent =  (now_nanos - self.last_cruise_cmd_timestamp) / 1e9
 
 
     # *** cruise control cancel signal ***
@@ -117,7 +116,17 @@ class CarController(CarControllerBase):
         # avoid clashing with upcoming stock message
         # sometimes upcoming stock message is overshadowed by us, so also avoid clashing with one after that
         self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 2
-      if time_since_cruise_sent > (CRUISE_STALK_HOLD_TICK if hold else CRUISE_STALK_TICK): # send faster to emulate held stalk
+      time_since_cruise_sent =  (now_nanos - self.last_cruise_tx_timestamp) / 1e9
+      time_since_cruise_received =  (now_nanos - self.last_cruise_rx_timestamp) / 1e9
+      # send single cmd with an effective rate slower than held stalk rate
+      if not hold:
+        send = time_since_cruise_sent > CRUISE_STALK_SINGLE_TICK \
+          and time_since_cruise_received > CRUISE_STALK_HOLD_TICK_STOCK \
+          and time_since_cruise_received < CRUISE_STALK_IDLE_TICK_STOCK - CRUISE_STALK_HOLD_TICK_STOCK
+      else:
+        # use faster rate to emulate held stalk. Time first message such that subsequent one will nullify stock message:
+        send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK and time_since_cruise_received > CRUISE_STALK_HOLD_TICK - 0.01
+      if send:
         can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter))
         self.last_cruise_cmd_timestamp = now_nanos
 
