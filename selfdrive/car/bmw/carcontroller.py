@@ -109,7 +109,7 @@ class CarController(CarControllerBase):
       self.CC_cancel = False
 
     # *** send cruise control stalk message ***
-    def send_cruise_cmd(self, cmd, hold=False):
+    def send_cruise_cmd(cmd, hold=False):
       self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
       # avoid counter clash with a potential upcoming message from stock cruise
       if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
