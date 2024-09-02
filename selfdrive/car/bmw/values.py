@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
-from enum import IntFlag
-from openpilot.selfdrive.car import Platforms, CarSpecs, CarDocs, PlatformConfig, dbc_dict, DbcDict, STD_CARGO_KG
+from enum import Enum, IntFlag
+from cereal import car
+from openpilot.selfdrive.car import Platforms, CarSpecs, PlatformConfig, dbc_dict, DbcDict, STD_CARGO_KG
+from openpilot.selfdrive.car.docs_definitions import CarFootnote, CarHarness, CarDocs, CarParts, Column
 from openpilot.selfdrive.car.conversions import Conversions as CV
 
 # Steer torque limits
@@ -34,6 +36,31 @@ class CanBus:
   K_CAN =     2 # not used - only logging
 
 
+class Footnote(Enum):
+  StepperServoCAN = CarFootnote(
+    "Requires StepperServoCAN",
+    Column.FSR_STEERING)
+  DCC = CarFootnote(
+    "Minimum speed with CC or DCC is 30 kph",
+    Column.FSR_LONGITUDINAL)
+  CC = CarFootnote(
+    "Normal cruise control should work but was not tested in a while. Code in DCC instead or provide a fix",
+    Column.PACKAGE)
+  ACC = CarFootnote(
+    "ACC is required. Also LDM module to take over when OP is off.",
+    Column.AUTO_RESUME)
+  DIY = CarFootnote(
+    "For CC and DCC only a diy USB-C and a resistor is required or a harness box DIY connector",
+    Column.HARDWARE)
+
+@dataclass
+class BmwCarDocs(CarDocs):
+  package: str = "Cruise Control - VO540, VO544, VO541"
+  footnotes: list[Footnote] = field(default_factory=lambda: [Footnote.StepperServoCAN, Footnote.DCC, Footnote.CC, Footnote.ACC, Footnote.DIY])
+
+  def init_make(self, CP: car.CarParams):
+      self.car_parts = CarParts.common([CarHarness.custom])
+
 @dataclass
 class BmwPlatformConfig(PlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('bmw_e9x_e8x', None))
@@ -41,11 +68,11 @@ class BmwPlatformConfig(PlatformConfig):
 
 class CAR(Platforms):
   BMW_E82 = BmwPlatformConfig(
-    [CarDocs("BMW E82 2007", "VO540, VO544, VO541")],
+    [BmwCarDocs("BMW E82 2004-13")],
     CarSpecs(mass=3145. * CV.LB_TO_KG + STD_CARGO_KG, wheelbase=2.66, steerRatio=16.00)
   )
   BMW_E90 = BmwPlatformConfig(
-    [CarDocs("BMW E90 2006", "VO540, VO544, VO541")],
+    [BmwCarDocs("BMW E90 2005-11")],
     CarSpecs(mass=3300. * CV.LB_TO_KG + STD_CARGO_KG, wheelbase=2.76, steerRatio=16.00)
   )
 
