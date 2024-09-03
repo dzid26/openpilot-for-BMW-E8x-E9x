@@ -128,7 +128,7 @@ class CarController(CarControllerBase):
         send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK and time_since_cruise_received > CRUISE_STALK_HOLD_TICK - 0.01
       if send:
         can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter))
-        self.last_cruise_cmd_timestamp = now_nanos
+        self.last_cruise_tx_timestamp = now_nanos
 
     if not cruise_stalk_human_pressing:
       if self.CC_cancel and CS.out.cruiseState.enabled:
