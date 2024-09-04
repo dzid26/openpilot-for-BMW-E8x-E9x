@@ -35,7 +35,8 @@ class CarController(CarControllerBase):
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
-    self.last_user_steer_cancel = True
+    self.hold_cruise_accel = False # holds to keep accelerating, cruiseState.speed will be ~ 3kph above vEgo
+    self.hold_cruise_accel_5 = False
 
     self.cruise_bus = CanBus.PT_CAN
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
