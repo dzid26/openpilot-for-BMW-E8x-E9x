@@ -42,7 +42,7 @@ class CarController(CarControllerBase):
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
-    self.tx_cruise_stalk_counter = 0
+    self.tx_cruise_stalk_counter_last = 0
     self.rx_cruise_stalk_counter_last = -1
     self.last_user_steer_cancel = True
 
@@ -81,7 +81,7 @@ class CarController(CarControllerBase):
 
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
-      self.tx_cruise_stalk_counter = CS.cruise_stalk_counter
+      self.tx_cruise_stalk_counter_last = CS.cruise_stalk_counter
       # stock message was sent some time in between control samples:
       self.last_cruise_rx_timestamp = now_nanos #todo can be replaced with precise ts_nanos from can parser
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
@@ -108,14 +108,8 @@ class CarController(CarControllerBase):
     if not CS.out.cruiseState.enabled:
       self.CC_cancel = False
 
-    # *** send cruise control stalk message ***
-    def send_cruise_cmd(cmd, hold=False):
-      self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 1
-      # avoid counter clash with a potential upcoming message from stock cruise
-      if self.tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
-        # avoid clashing with upcoming stock message
-        # sometimes upcoming stock message is overshadowed by us, so also avoid clashing with one after that
-        self.tx_cruise_stalk_counter = self.tx_cruise_stalk_counter + 2
+    # *** send cruise control stalk message at different rates and manage counters ***
+    def cruise_cmd(cmd, hold=False):
       time_since_cruise_sent =  (now_nanos - self.last_cruise_tx_timestamp) / 1e9
       time_since_cruise_received =  (now_nanos - self.last_cruise_rx_timestamp) / 1e9
       # send single cmd with an effective rate slower than held stalk rate
@@ -127,27 +121,35 @@ class CarController(CarControllerBase):
         # use faster rate to emulate held stalk. Time first message such that subsequent one will nullify stock message:
         send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK and time_since_cruise_received > CRUISE_STALK_HOLD_TICK - 0.01
       if send:
-        can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter))
+        tx_cruise_stalk_counter = self.tx_cruise_stalk_counter_last + 1
+        # avoid counter clash with a potential upcoming message from stock cruise
+        if tx_cruise_stalk_counter == CS.cruise_stalk_counter + 1:
+          # avoid clashing with upcoming stock message
+          # sometimes upcoming stock message is overshadowed by us, so also avoid clashing with one after that
+          tx_cruise_stalk_counter = tx_cruise_stalk_counter + 2
+        tx_cruise_stalk_counter = tx_cruise_stalk_counter % 0xF
+        can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter_last))
+        self.tx_cruise_stalk_counter_last = self.tx_cruise_stalk_counter_last
         self.last_cruise_tx_timestamp = now_nanos
 
     if not cruise_stalk_human_pressing:
       if self.CC_cancel and CS.out.cruiseState.enabled:
-        send_cruise_cmd(CruiseStalk.cancel)
+        cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled and speed_diff_req > CC_STEP/2 and CS.out.cruiseState.enabled:
         if actuators.accel > 0.7:
-          send_cruise_cmd(CruiseStalk.plus5, hold=True) # up to 1.2 m/s2
+          cruise_cmd(CruiseStalk.plus5, hold=True) # up to 1.2 m/s2
         elif actuators.accel > 0.4:
-          send_cruise_cmd(CruiseStalk.plus1, hold=True) # up to 0.8 m/s2
+          cruise_cmd(CruiseStalk.plus1, hold=True) # up to 0.8 m/s2
         else:
-          send_cruise_cmd(CruiseStalk.plus1)
+          cruise_cmd(CruiseStalk.plus1)
       elif CC.enabled and speed_diff_req < -CC_STEP/2 and CS.out.cruiseState.enabled and not CS.out.gasPressed:
         if actuators.accel < -0.7:
-          send_cruise_cmd(CruiseStalk.minus5, hold=True) # down to -1.4 m/s2
+          cruise_cmd(CruiseStalk.minus5, hold=True) # down to -1.4 m/s2
         elif actuators.accel < -0.3:
-          send_cruise_cmd(CruiseStalk.minus1, hold=True) # down to -0.8 m/s2
+          cruise_cmd(CruiseStalk.minus1, hold=True) # down to -0.8 m/s2
         else:
-          send_cruise_cmd(CruiseStalk.minus1)
+          cruise_cmd(CruiseStalk.minus1)
 
 
 
