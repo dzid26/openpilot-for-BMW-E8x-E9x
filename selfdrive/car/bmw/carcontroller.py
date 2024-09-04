@@ -17,6 +17,11 @@ CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stal
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
 CRUISE_STALK_HOLD_TICK = CRUISE_STALK_HOLD_TICK_STOCK # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
 
+ACCEL_HYST_GAP = CC_STEP * 0.5  # between 0 and CC_STEP
+
+
+CRUISE_SPEED_TARGET_OFFSET = [-2,   -1,   0,   1,   2,   3  ]
+CRUISE_SPEED_TARGET_ACCEL =  [-0.8, -0.2, 0.0, 0.8, 1.0, 1.2]
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
@@ -102,6 +107,7 @@ class CarController(CarControllerBase):
 
     # *** send cruise control stalk message at different rates and manage counters ***
     def cruise_cmd(cmd, hold=False):
+      self.hold_cruise_accel = hold
       time_since_cruise_sent =  (now_nanos - self.last_cruise_tx_timestamp) / 1e9
       time_since_cruise_received =  (now_nanos - self.last_cruise_rx_timestamp) / 1e9
       # send single cmd with an effective rate slower than held stalk rate
@@ -121,7 +127,7 @@ class CarController(CarControllerBase):
           tx_cruise_stalk_counter = tx_cruise_stalk_counter + 2
         tx_cruise_stalk_counter = tx_cruise_stalk_counter % 0xF
         can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter_last))
-        self.tx_cruise_stalk_counter_last = self.tx_cruise_stalk_counter_last
+        self.tx_cruise_stalk_counter_last = tx_cruise_stalk_counter
         self.last_cruise_tx_timestamp = now_nanos
 
     if not cruise_stalk_human_pressing:
@@ -142,6 +148,11 @@ class CarController(CarControllerBase):
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req < -CC_STEP/2:
           cruise_cmd(CruiseStalk.minus1)
+
+    if actuators.accel > -0.6 or self.hold_cruise_accel < 0.6:
+      self.hold_cruise_accel_5 = False
+    if actuators.accel > -0.2 or self.hold_cruise_accel < 0.3:
+      self.hold_cruise_accel = False
 
 
 
