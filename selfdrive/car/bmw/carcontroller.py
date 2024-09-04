@@ -14,14 +14,6 @@ CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles d
 CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
 CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
-# Accel limits
-ACCEL_HYST_GAP = CC_STEP * 0.9  # between 0 and CC_STEP
-ACCEL_MAX = 4  # cruise control rapid clicking
-ACCEL_SLOW = 3 # cruise control hold up
-DECEL_SLOW = -2   # cruise control decrease speed slowly
-DECEL_MIN = -6  # cruise control hold down
-ACCEL_SCALE = max(ACCEL_MAX, -DECEL_MIN)
-
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
 CRUISE_STALK_HOLD_TICK = CRUISE_STALK_HOLD_TICK_STOCK # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
 
@@ -36,14 +28,13 @@ class CarController(CarControllerBase):
     self.CC_enabled_prev = False
     # redundant safety check with the board
     self.apply_steer_last = 0
-    self.accel_steady = 0.
     self.last_cruise_rx_timestamp = 0 # stock cruise buttons
     self.last_cruise_tx_timestamp = 0 # openpilot commands
+    self.tx_cruise_stalk_counter_last = 0
+    self.rx_cruise_stalk_counter_last = -1
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calcDesiredSpeed = 0
-    self.tx_cruise_stalk_counter_last = 0
-    self.rx_cruise_stalk_counter_last = -1
     self.last_user_steer_cancel = True
 
     self.cruise_bus = CanBus.PT_CAN
