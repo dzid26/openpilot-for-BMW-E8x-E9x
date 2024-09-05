@@ -126,7 +126,7 @@ class CarController(CarControllerBase):
           # sometimes upcoming stock message is overshadowed by us, so also avoid clashing with one after that
           tx_cruise_stalk_counter = tx_cruise_stalk_counter + 2
         tx_cruise_stalk_counter = tx_cruise_stalk_counter % 0xF
-        can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, self.tx_cruise_stalk_counter_last))
+        can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, tx_cruise_stalk_counter))
         self.tx_cruise_stalk_counter_last = tx_cruise_stalk_counter
         self.last_cruise_tx_timestamp = now_nanos
 
