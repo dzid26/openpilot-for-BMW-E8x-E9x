@@ -182,7 +182,7 @@ class CarController(CarControllerBase):
     new_actuators.steerOutputCan = self.apply_steer_last
 
     new_actuators.speed = self.calcDesiredSpeed
-    new_actuators.accel = speed_diff_req
+    new_actuators.accel = speed_diff_req / self.CC_units
 
     self.frame += 1
     return new_actuators, can_sends
