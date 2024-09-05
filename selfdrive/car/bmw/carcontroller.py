@@ -108,8 +108,8 @@ class CarController(CarControllerBase):
       # send single cmd with an effective rate slower than held stalk rate
       if not hold:
         send = time_since_cruise_sent > CRUISE_STALK_SINGLE_TICK \
-          and time_since_cruise_received > CRUISE_STALK_HOLD_TICK_STOCK \
-          and time_since_cruise_received < CRUISE_STALK_IDLE_TICK_STOCK - CRUISE_STALK_HOLD_TICK_STOCK
+          and time_since_cruise_received > CRUISE_STALK_HOLD_TICK_STOCK/2 - DT_CTRL \
+          and time_since_cruise_received < CRUISE_STALK_IDLE_TICK_STOCK/2 + DT_CTRL
       else:
         # use faster rate to emulate held stalk. Time first message such that subsequent one will nullify stock message:
         send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK and time_since_cruise_received > CRUISE_STALK_HOLD_TICK - 0.01
