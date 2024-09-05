@@ -17,7 +17,7 @@ CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stal
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
 CRUISE_STALK_HOLD_TICK = CRUISE_STALK_HOLD_TICK_STOCK # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
 
-ACCEL_HYST_GAP = CC_STEP * 0.5  # between 0 and CC_STEP
+ACCEL_HYST_GAP = CC_STEP * 0.8  # between 0 and CC_STEP
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
