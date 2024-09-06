@@ -138,9 +138,8 @@ class CarController(CarControllerBase):
         elif speed_diff_req > CC_STEP/2:
           cruise_cmd(CruiseStalk.plus1)
       elif CC.enabled and CS.out.cruiseState.enabled and not CS.out.gasPressed:
-        if actuators.accel < -0.7:
-          # cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
-          cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -1.4 m/s2
+        if actuators.accel < -0.7 and self.calcDesiredSpeed <= (self.minCruiseSpeed * self.CC_units): # hack: cruise speed target cannot go below minCruiseSpeed, so it's safe to hold minus 5
+          cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif actuators.accel < -0.3:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req < -CC_STEP/2:
