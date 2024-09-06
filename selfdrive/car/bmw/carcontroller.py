@@ -67,7 +67,7 @@ class CarController(CarControllerBase):
       self.cruise_speed_with_hyst = CS.out.cruiseState.speed
 
     # *** desired speed model ***
-    if accel_zero_cross or CC.enabled and not self.CC_enabled_prev:
+    if accel_zero_cross or not self.CC_enabled_prev:
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
@@ -103,8 +103,8 @@ class CarController(CarControllerBase):
 
     # *** send cruise control stalk message at different rates and manage counters ***
     def cruise_cmd(cmd, hold=False):
-      time_since_cruise_sent =  (now_nanos - self.last_cruise_tx_timestamp) / 1e9
-      time_since_cruise_received =  (now_nanos - self.last_cruise_rx_timestamp) / 1e9
+      time_since_cruise_sent =      (now_nanos - self.last_cruise_tx_timestamp) / 1e9 + DT_CTRL / 10 # add half task sample time to account for latency
+      time_since_cruise_received =  (now_nanos - self.last_cruise_rx_timestamp) / 1e9 + DT_CTRL / 10 # add half task sample time to account for latency
       # send single cmd with an effective rate slower than held stalk rate
       if not hold:
         send = time_since_cruise_sent > CRUISE_STALK_SINGLE_TICK \
