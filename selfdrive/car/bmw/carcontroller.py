@@ -67,7 +67,7 @@ class CarController(CarControllerBase):
       self.cruise_speed_with_hyst = CS.out.cruiseState.speed
 
     # *** desired speed model ***
-    if accel_zero_cross or not self.CC_enabled_prev:
+    if accel_zero_cross or not CC.enabled:
       self.calcDesiredSpeed = CS.out.vEgo
     self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
