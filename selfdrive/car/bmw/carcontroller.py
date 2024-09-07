@@ -168,6 +168,8 @@ class CarController(CarControllerBase):
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
         self.apply_steer_last = apply_steer
 
+    self.CC_enabled_prev = CC.enabled
+
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
