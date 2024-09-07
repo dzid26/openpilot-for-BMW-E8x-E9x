@@ -14,20 +14,20 @@ TransmissionType = car.CarParams.TransmissionType
 GearShifter = car.CarState.GearShifter
 
 # certain driver intervention can be distinguished from maximum estimated wheel turning force
-def detect_stepper_override(steerCmd, steerAct, vEgo, centering_ceoff, SteerFrictionTq):
+def detect_stepper_override(steer_cmd, steer_act, v_ego, centering_coeff, steer_friction_torque):
   # when steering released (or lost steps), what angle will it return to
   # if we are above that angle, we can detect things
-  releaseAngle = SteerFrictionTq / (max(vEgo, 1) ** 2 * centering_ceoff)
+  release_angle = steer_friction_torque / (max(v_ego, 1) ** 2 * centering_coeff)
 
   override = False
-  marginVal = 1
-  if abs(steerCmd) > releaseAngle:  # for higher angles we steering will not move outward by itself with stepper on
-    if steerCmd > 0:
-      override |= steerAct - steerCmd > marginVal  # driver overrode from right to more right
-      override |= steerAct < 0  # releaseAngle -3  # driver overrode from right to opposite direction
+  margin_value = 1
+  if abs(steer_cmd) > release_angle:  # for higher angles we steering will not move outward by itself with stepper on
+    if steer_cmd > 0:
+      override |= steer_act - steer_cmd > margin_value  # driver overrode from right to more right
+      override |= steer_act < 0  # releaseAngle -3  # driver overrode from right to opposite direction
     else:
-      override |= steerAct - steerCmd < -marginVal  # driver overrode from left to more left
-      override |= steerAct > 0  # -releaseAngle +3 # driver overrode from left to opposite direction
+      override |= steer_act - steer_cmd < -margin_value  # driver overrode from left to more left
+      override |= steer_act > 0  # -releaseAngle +3 # driver overrode from left to opposite direction
   # else:
     # override |= abs(steerAct) > releaseAngle + marginVal  # driver overrode to an angle where steering will not go by itself
   return override
@@ -46,16 +46,16 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   # servotronic is a bit more lighter in general and especially at low speeds https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-13#post-117705
   def get_steer_feedforward_servotronic(desired_angle, v_ego): # accounts for steering rack ratio and/or caster nonlinearities https://www.spoolstreet.com/threads/servotronic-on-a-335i.1400/page-15#post-131271
-    angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
-    hold_torque_V  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
-    hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
+    angle_bp =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
+    hold_torque_v  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
+    hold_torque = interp(desired_angle, angle_bp, hold_torque_v)
     return hold_torque # todo add speed component
 
   @staticmethod
   def get_steer_feedforward(desired_angle, v_ego):
-    angle_BP =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
-    hold_torque_V  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
-    hold_torque = interp(desired_angle, angle_BP, hold_torque_V)
+    angle_bp =       [-40.0, -6.0, -4.0, -3.0, -2.0, -1.0, -0.5,  0.5,  1.0,  2.0,  3.0,  4.0,  6.0, 40.0] # deg
+    hold_torque_v  = [-6, -2.85, -2.5, -2.25, -2, -1.65, -1, 1, 1.65, 2, 2.25, 2.5, 2.85, 6] # Nm
+    hold_torque = interp(desired_angle, angle_bp, hold_torque_v)
     return hold_torque # todo add speed component
 
   def get_steer_feedforward_function(self):
@@ -145,7 +145,7 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.cruise_stalk_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
       *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
       *create_button_events(self.CS.cruise_stalk_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
-      *create_button_events(self.CS.otherButtons, not self.CS.otherButtons, {1: ButtonType.altButton1}),
+      *create_button_events(self.CS.other_buttons, not self.CS.other_buttons, {1: ButtonType.altButton1}),
     ]
 
     # events

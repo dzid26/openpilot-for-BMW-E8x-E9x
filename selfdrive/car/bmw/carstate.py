@@ -25,19 +25,20 @@ class CarState(CarStateBase):
     self.cruise_stalk_cancel = False
     self.cruise_stalk_cancel_up = False
     self.cruise_stalk_cancel_dn = False
+    self.cruise_stalk_counter = 0
     self.prev_cruise_plus = self.cruise_stalk_plus
     self.prev_cruise_minus = self.cruise_stalk_minus
     self.prev_cruise_plus5 = self.cruise_stalk_plus5
     self.prev_cruise_minus5 = self.cruise_stalk_minus5
     self.prev_cruise_resume = self.cruise_stalk_resume
     self.prev_cruise_cancel = self.cruise_stalk_cancel
-    self.prev_cruise_cancelUpStalk = self.cruise_stalk_cancel_up
-    self.prev_cruise_cancelDnStalk = self.cruise_stalk_cancel_dn
+    self.prev_cruise_cancel_stalk_up = self.cruise_stalk_cancel_up
+    self.prev_cruise_cancel_stalk_down = self.cruise_stalk_cancel_dn
 
     self.right_blinker_pressed = False
     self.left_blinker_pressed = False
-    self.otherButtons = False
-    self.prev_gasPressed = False
+    self.other_buttons = False
+    self.prev_gas_pressed = False
     self.dtc_mode = False
 
   def update(self, cp_PT, cp_F, cp_aux):
@@ -48,8 +49,8 @@ class CarState(CarStateBase):
     self.prev_cruise_minus5 = self.cruise_stalk_minus5
     self.prev_cruise_resume = self.cruise_stalk_resume
     self.prev_cruise_cancel = self.cruise_stalk_cancel
-    self.prev_cruise_cancelUpStalk = self.cruise_stalk_cancel_up
-    self.prev_cruise_cancelDnStalk = self.cruise_stalk_cancel_dn
+    self.prev_cruise_cancel_stalk_up = self.cruise_stalk_cancel_up
+    self.prev_cruise_cancel_stalk_down = self.cruise_stalk_cancel_dn
 
     ret = car.CarState.new_message()
 
@@ -73,7 +74,7 @@ class CarState(CarStateBase):
     ret.vEgoCluster = ret.vEgo + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS
     ret.standstill = not cp_PT.vl['Speed']["MovingForward"] and not cp_PT.vl['Speed']["MovingReverse"]
 
-    ret.steeringRateDeg = (cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed'])
+    ret.steeringRateDeg = cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed']
     can_gear = int(cp_PT.vl["TransmissionDataDisplay"]['ShiftLeverPosition'])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
     blinker_on = cp_PT.vl["TurnSignals"]['TurnSignalActive'] != 0 and cp_PT.vl["TurnSignals"]['TurnSignalIdle'] == 0
@@ -85,11 +86,11 @@ class CarState(CarStateBase):
     self.dtc_mode = cp_PT.vl['StatusDSC_KCAN']['DTC_on'] != 0 # drifty traction control ;)
 
     # other buttons help determine driver is paying attention in case the face is not visible
-    self.otherButtons = \
+    self.other_buttons = \
       cp_PT.vl["SteeringButtons"]['Volume_DOWN'] !=0  or cp_PT.vl["SteeringButtons"]['Volume_UP'] !=0  or \
       cp_PT.vl["SteeringButtons"]['Previous_down'] !=0  or cp_PT.vl["SteeringButtons"]['Next_up'] !=0 or \
       cp_PT.vl["SteeringButtons"]['VoiceControl'] !=0 or \
-      self.prev_gasPressed and not ret.gasPressed # treat gas pedal tap as a button - button events indicate driver engagement - useful if face not visible
+      self.prev_gas_pressed and not ret.gasPressed # treat gas pedal tap as a button - button events indicate driver engagement - useful if face not visible
 
     # E-series doesn't have torque sensor
     # use Voice button or gas pedal to fake steeringPressed to confirm a lane change
@@ -112,27 +113,27 @@ class CarState(CarStateBase):
     #   elif abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_MPH) < 0.3:
     #     self.is_metric = False
 
-    cruiseControlStalkMsg = cp_PT.vl["CruiseControlStalk"]
+    cruise_control_stal_msg = cp_PT.vl["CruiseControlStalk"]
     if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
-      ret.steeringAngleDeg = (cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition'])  # slightly quicker on F-CAN TODO find the factor and put in DBC
+      ret.steeringAngleDeg = cp_F.vl['SteeringWheelAngle_DSC']['SteeringPosition']  # slightly quicker on F-CAN TODO find the factor and put in DBC
       ret.cruiseState.speed = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["DynamicCruiseControlStatus"]['CruiseActive'] != 0
       # DCC implies that cruise control is done on F-CAN
       # If we are sending on F-can, we also need to read on F-can to differentiate our messages from car messages
-      cruiseControlStalkMsg = cp_F.vl["CruiseControlStalk"]
+      cruise_control_stal_msg = cp_F.vl["CruiseControlStalk"]
     elif self.CP.flags & BmwFlags.NORMAL_CRUISE_CONTROL:
-      ret.steeringAngleDeg = (cp_PT.vl['SteeringWheelAngle']['SteeringPosition'])
+      ret.steeringAngleDeg = cp_PT.vl['SteeringWheelAngle']['SteeringPosition']
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
     ret.cruiseState.speedCluster = ret.cruiseState.speed + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS #For logging. Doesn't do anything with pcmCruise = False
-    self.cruise_stalk_plus = cruiseControlStalkMsg['plus1'] != 0
-    self.cruise_stalk_minus = cruiseControlStalkMsg['minus1'] != 0
-    self.cruise_stalk_plus5 = cruiseControlStalkMsg['plus5'] != 0
-    self.cruise_stalk_minus5 = cruiseControlStalkMsg['minus5'] != 0
-    self.cruise_stalk_resume = cruiseControlStalkMsg['resume'] != 0
-    self.cruise_stalk_cancel = cruiseControlStalkMsg['cancel'] != 0
-    self.cruise_stalk_cancel_up = cruiseControlStalkMsg['cancel_lever_up'] != 0
-    self.cruise_stalk_counter = cruiseControlStalkMsg['Counter_404']
+    self.cruise_stalk_plus = cruise_control_stal_msg['plus1'] != 0
+    self.cruise_stalk_minus = cruise_control_stal_msg['minus1'] != 0
+    self.cruise_stalk_plus5 = cruise_control_stal_msg['plus5'] != 0
+    self.cruise_stalk_minus5 = cruise_control_stal_msg['minus5'] != 0
+    self.cruise_stalk_resume = cruise_control_stal_msg['resume'] != 0
+    self.cruise_stalk_cancel = cruise_control_stal_msg['cancel'] != 0
+    self.cruise_stalk_cancel_up = cruise_control_stal_msg['cancel_lever_up'] != 0
+    self.cruise_stalk_counter = cruise_control_stal_msg['Counter_404']
     self.cruise_stalk_cancel_dn = self.cruise_stalk_cancel and not self.cruise_stalk_cancel_up
 
 
@@ -143,7 +144,7 @@ class CarState(CarStateBase):
       self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
       ret.steerFaultTemporary = int(cp_aux.vl['STEERING_STATUS']['CONTROL_STATUS']) & 0x4 != 0
 
-    self.prev_gasPressed = ret.gasPressed
+    self.prev_gas_pressed = ret.gasPressed
     return ret
 
   @staticmethod

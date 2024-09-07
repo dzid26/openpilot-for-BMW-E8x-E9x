@@ -23,10 +23,11 @@ class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
     super().__init__(dbc_name, CP)
     self.flags = CP.flags
-    self.minCruiseSpeed = CP.minEnableSpeed
+    self.min_cruise_speed = CP.minEnableSpeed
+    self.cruise_units = None
 
-    self.CC_cancel = False  # local cruise control cancel
-    self.CC_enabled_prev = False
+    self.cruise_cancel = False  # local cruise control cancel
+    self.cruise_enabled_prev = False
     # redundant safety check with the board
     self.apply_steer_last = 0
     self.last_cruise_rx_timestamp = 0 # stock cruise buttons
@@ -35,7 +36,7 @@ class CarController(CarControllerBase):
     self.rx_cruise_stalk_counter_last = -1
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
-    self.calcDesiredSpeed = 0
+    self.calc_desired_speed = 0
     self.hold_cruise_accel = False # holds to keep accelerating, cruiseState.speed will be ~ 3kph above vEgo
     self.hold_cruise_accel_5 = False
 
@@ -52,7 +53,7 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     can_sends = []
 
-    self.CC_units = (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
+    self.cruise_units = (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
 
     # detect acceleration sign change
     accel_zero_cross = actuators.accel * self.actuators_accel_last < 0
@@ -60,7 +61,7 @@ class CarController(CarControllerBase):
 
     # *** hysteresis - trend is your friend ***
     # avoids cruise speed toggling and biases next request toward the direction of the previous one
-    self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.CC_units)
+    self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.cruise_units)
     if not CS.out.cruiseState.enabled or CS.out.gasPressed:
       self.cruise_speed_with_hyst = CS.out.vEgo
     if accel_zero_cross:
@@ -68,9 +69,9 @@ class CarController(CarControllerBase):
 
     # *** desired speed model ***
     if accel_zero_cross or not CC.enabled:
-      self.calcDesiredSpeed = CS.out.vEgo
-    self.calcDesiredSpeed = self.calcDesiredSpeed + actuators.accel * DT_CTRL
-    speed_diff_req = (self.calcDesiredSpeed - self.cruise_speed_with_hyst) * self.CC_units
+      self.calc_desired_speed = CS.out.vEgo
+    self.calc_desired_speed = self.calc_desired_speed + actuators.accel * DT_CTRL
+    speed_diff_req = (self.calc_desired_speed - self.cruise_speed_with_hyst) * self.cruise_units
 
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
@@ -91,15 +92,15 @@ class CarController(CarControllerBase):
     # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
     # CC.enabled appears after cruiseState.enabled, so we need to check rising edge to prevent instantaneous cancel after cruise is enabled
     # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
-    if not CC.enabled and self.CC_enabled_prev:
-      self.CC_cancel = True
+    if not CC.enabled and self.cruise_enabled_prev:
+      self.cruise_cancel = True
     # if we need to go below cruise speed, request cancel and coast while steering enabled
-    if CS.out.cruiseState.speedCluster - self.minCruiseSpeed < 0.1 and actuators.accel < 0.1 \
-      and CS.out.vEgoCluster - self.minCruiseSpeed < 0.5 and CS.out.vEgo - self.calcDesiredSpeed > 1:
-      self.CC_cancel = True
+    if CS.out.cruiseState.speedCluster - self.min_cruise_speed < 0.1 and actuators.accel < 0.1 \
+      and CS.out.vEgoCluster - self.min_cruise_speed < 0.5 and CS.out.vEgo - self.calc_desired_speed > 1:
+      self.cruise_cancel = True
     # keep requesting cancel until the cruise is disabled
     if not CS.out.cruiseState.enabled:
-      self.CC_cancel = False
+      self.cruise_cancel = False
 
     # *** send cruise control stalk message at different rates and manage counters ***
     def cruise_cmd(cmd, hold=False):
@@ -126,7 +127,7 @@ class CarController(CarControllerBase):
         self.last_cruise_tx_timestamp = now_nanos
 
     if not cruise_stalk_human_pressing:
-      if self.CC_cancel and CS.out.cruiseState.enabled:
+      if self.cruise_cancel and CS.out.cruiseState.enabled:
         cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled and CS.out.cruiseState.enabled:
@@ -138,7 +139,7 @@ class CarController(CarControllerBase):
         elif speed_diff_req > CC_STEP/2:
           cruise_cmd(CruiseStalk.plus1)
       elif CC.enabled and CS.out.cruiseState.enabled and not CS.out.gasPressed:
-        if actuators.accel < -0.7 and self.calcDesiredSpeed <= (self.minCruiseSpeed * self.CC_units): # hack: cruise speed target cannot go below minCruiseSpeed, so it's safe to hold minus 5
+        if actuators.accel < -0.7 and self.calc_desired_speed <= (self.min_cruise_speed * self.cruise_units): # hack: cruise speed target cannot go below minCruiseSpeed, so it's safe to hold minus 5
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif actuators.accel < -0.3:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
@@ -168,14 +169,14 @@ class CarController(CarControllerBase):
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
         self.apply_steer_last = apply_steer
 
-    self.CC_enabled_prev = CC.enabled
+    self.cruise_enabled_prev = CC.enabled
 
     new_actuators = actuators.as_builder()
     new_actuators.steer = self.apply_steer_last / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = self.apply_steer_last
 
-    new_actuators.speed = self.calcDesiredSpeed
-    new_actuators.accel = speed_diff_req / self.CC_units
+    new_actuators.speed = self.calc_desired_speed
+    new_actuators.accel = speed_diff_req / self.cruise_units
 
     self.frame += 1
     return new_actuators, can_sends
