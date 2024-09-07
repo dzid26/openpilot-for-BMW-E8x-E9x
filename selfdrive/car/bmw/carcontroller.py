@@ -11,6 +11,7 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 # DO NOT CHANGE: Cruise control step size
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
+ACCEL_HYST_GAP = 0.9 * CC_STEP
 CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
 CRUISE_STALK_HOLD_TICK_STOCK = 0.01 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
@@ -62,13 +63,13 @@ class CarController(CarControllerBase):
     # *** hysteresis - trend is your friend ***
     # avoids cruise speed toggling and biases next request toward the direction of the previous one
     self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.cruise_units)
-    if not CS.out.cruiseState.enabled or CS.out.gasPressed:
+    if not CS.out.cruiseState.enabled:
       self.cruise_speed_with_hyst = CS.out.vEgo
     if accel_zero_cross:
       self.cruise_speed_with_hyst = CS.out.cruiseState.speed
 
     # *** desired speed model ***
-    if accel_zero_cross or not CC.enabled:
+    if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
       self.calc_desired_speed = CS.out.vEgo
     self.calc_desired_speed = self.calc_desired_speed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calc_desired_speed - self.cruise_speed_with_hyst) * self.cruise_units
