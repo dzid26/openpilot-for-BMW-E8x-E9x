@@ -104,15 +104,19 @@ class CarInterface(CarInterfaceBase):
     ret.radarUnavailable = True
 
     ret.steerControlType = car.CarParams.SteerControlType.torque
-    ret.steerActuatorDelay = 0.15
+    ret.steerActuatorDelay = 0.6
     ret.steerLimitTimer = 0.4
-    ret.lateralTuning.init('pid')
-    ret.lateralTuning.pid.kpBP = [5.5, 30.]
-    ret.lateralTuning.pid.kiBP = [5.5, 30.]
-    ret.lateralTuning.pid.kpV = [0.2 / CarControllerParams.STEER_MAX, 0.8 / CarControllerParams.STEER_MAX]
-    ret.lateralTuning.pid.kiV = [0.0 / CarControllerParams.STEER_MAX, 0.05 / CarControllerParams.STEER_MAX]
-    ret.lateralTuning.pid.kf =   1.0 / CarControllerParams.STEER_MAX # scales output from get_steer_feedforward_function
+    ret.lateralTuning.init('torque')
+    ret.lateralTuning.torque.kp = 1.0 / CarControllerParams.STEER_MAX
+    ret.lateralTuning.torque.ki = 0.5 / CarControllerParams.STEER_MAX
+    ret.lateralTuning.torque.kf = 4.5 / CarControllerParams.STEER_MAX
+    ret.lateralTuning.torque.friction = 0.23 #live parameters
+    ret.lateralTuning.torque.latAccelFactor = 1.41 #live parameters
+    ret.lateralTuning.torque.latAccelOffset = -0.255
+    ret.lateralTuning.torque.useSteeringAngle = False
+    ret.lateralTuning.torque.steeringAngleDeadzoneDeg = 0.0 # backlash of stepper?
 
+    ret.longitudinalActuatorDelay = 0.5 #s, Gas/Brake actuator delay
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [.1]
     ret.longitudinalTuning.kiBP = [0.]
