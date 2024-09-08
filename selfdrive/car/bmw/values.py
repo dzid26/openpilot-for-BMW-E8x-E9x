@@ -56,7 +56,7 @@ class Footnote(Enum):
 @dataclass
 class BmwCarDocs(CarDocs):
   package: str = "Cruise Control - VO540, VO544, VO541"
-  footnotes: list[Footnote] = field(default_factory=lambda: [Footnote.StepperServoCAN, Footnote.DCC, Footnote.CC, Footnote.ACC, Footnote.DIY])
+  footnotes: list[Enum] = field(default_factory=lambda: [Footnote.StepperServoCAN, Footnote.DCC, Footnote.CC, Footnote.ACC, Footnote.DIY])
 
   def init_make(self, CP: car.CarParams):
       self.car_parts = CarParts.common([CarHarness.custom])
