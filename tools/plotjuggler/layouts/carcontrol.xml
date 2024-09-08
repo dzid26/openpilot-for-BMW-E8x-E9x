@@ -128,9 +128,9 @@
       <plot style="LinesAndDots" mode="TimeSeries" flip_x="false" flip_y="false">
        <range bottom="-0.350000" right="959.491441" top="14.350000" left="870.873213"/>
        <limitY/>
-       <curve color="#22b41f" name="/can/0/CruiseControlStalk/Counter_404"/>
-       <curve color="#b41f5b" name="/can/1/CruiseControlStalk/Counter_404"/>
-       <curve color="#f14cc1" name="/sendcan/1/CruiseControlStalk/Counter_404"/>
+       <curve color="#22b41f" name="/can/0/CruiseControlStalk/Counter_0x194"/>
+       <curve color="#b41f5b" name="/can/1/CruiseControlStalk/Counter_0x194"/>
+       <curve color="#f14cc1" name="/sendcan/1/CruiseControlStalk/Counter_0x194"/>
       </plot>
      </DockArea>
      <DockArea name="...">
@@ -160,13 +160,6 @@
   <plugin ID="DataLoad Rlog"/>
   <plugin ID="Cereal Subscriber"/>
  </Plugins>
- <!-- - - - - - - - - - - - - - - -->
- <previouslyLoaded_Datafiles>
-  <fileInfo filename="../tmpx3uy35vw.rlog" prefix="">
-   <selected_datasources value=""/>
-   <plugin ID="DataLoad Rlog"/>
-  </fileInfo>
- </previouslyLoaded_Datafiles>
  <!-- - - - - - - - - - - - - - - -->
  <customMathEquations>
   <snippet name="calcDesiredSpeed">
