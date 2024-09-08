@@ -73,7 +73,7 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS
     ret.standstill = not cp_PT.vl['Speed']["MovingForward"] and not cp_PT.vl['Speed']["MovingReverse"]
-
+    ret.yawRate = cp_PT.vl['Speed']["YawRate"] * CV.DEG_TO_RAD
     ret.steeringRateDeg = cp_PT.vl["SteeringWheelAngle"]['SteeringSpeed']
     can_gear = int(cp_PT.vl["TransmissionDataDisplay"]['ShiftLeverPosition'])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))

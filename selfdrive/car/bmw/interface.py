@@ -138,8 +138,6 @@ class CarInterface(CarInterfaceBase):
     # ******************* do can recv *******************
     ret = self.CS.update(self.cp, self.cp_F, self.cp_aux)
 
-    ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo, 0) # todo use canbus signal
-
     ret.buttonEvents = [
       *create_button_events(self.CS.cruise_stalk_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
       *create_button_events(self.CS.cruise_stalk_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
