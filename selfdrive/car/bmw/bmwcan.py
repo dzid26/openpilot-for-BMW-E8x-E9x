@@ -64,12 +64,12 @@ def create_accel_command(packer, action: CruiseStalk, bus: int, cnt):
     values = {
         "setMe_0xFC": 0xFC,
         "requests_0xF": 0xF,
-        "Counter_404": cnt % 0xF # counts from 0 to 14
+        "Counter_0x194": cnt % 0xF # counts from 0 to 14
         }
     values[action.value] = 1
 
     dat = packer.make_can_msg("CruiseControlStalk", bus, values)[1]
-    values["Checksum_404"] = calc_checksum_cruise(dat)
+    values["Checksum_0x194"] = calc_checksum_cruise(dat)
 
     return packer.make_can_msg("CruiseControlStalk", bus, values)
 
