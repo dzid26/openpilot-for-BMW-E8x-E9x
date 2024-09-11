@@ -13,10 +13,10 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
 ACCEL_HYST_GAP = 0.9 * CC_STEP
 CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
-CRUISE_STALK_HOLD_TICK_STOCK = 0.01 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
+CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
-CRUISE_STALK_HOLD_TICK = CRUISE_STALK_HOLD_TICK_STOCK # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
+CRUISE_STALK_HOLD_TICK = 0.01 # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
 
 ACCEL_HYST_GAP = CC_STEP * 0.8  # between 0 and CC_STEP
 
