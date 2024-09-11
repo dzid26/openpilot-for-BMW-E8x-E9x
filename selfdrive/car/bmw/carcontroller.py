@@ -136,7 +136,7 @@ class CarController(CarControllerBase):
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif actuators.accel > 0.3 and not speed_diff_req < -5*CC_STEP:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
-        elif actuators.accel < -0.3 and not speed_diff_req > 5*CC_STEP and not CS.out.gasPressed:
+        elif actuators.accel < -0.4 and not speed_diff_req > 5*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req > CC_STEP/2 and actuators.accel >=0.0: # 0.0 if gasPressed
           cruise_cmd(CruiseStalk.plus1)
