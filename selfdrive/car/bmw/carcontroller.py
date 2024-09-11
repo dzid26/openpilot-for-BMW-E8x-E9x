@@ -114,7 +114,7 @@ class CarController(CarControllerBase):
           and time_since_cruise_received < CRUISE_STALK_IDLE_TICK_STOCK/2 + DT_CTRL
       else:
         # use faster rate to emulate held stalk. Time first message such that subsequent one will nullify stock message:
-        send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK and time_since_cruise_received > CRUISE_STALK_HOLD_TICK - 0.01
+        send = hold and time_since_cruise_sent > CRUISE_STALK_HOLD_TICK
       if send:
         tx_cruise_stalk_counter = self.tx_cruise_stalk_counter_last + 1
         # avoid counter clash with a potential upcoming message from stock cruise
