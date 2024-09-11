@@ -38,8 +38,6 @@ class CarController(CarControllerBase):
     self.cruise_speed_with_hyst = 0
     self.actuators_accel_last = 0
     self.calc_desired_speed = 0
-    self.hold_cruise_accel = False # holds to keep accelerating, cruiseState.speed will be ~ 3kph above vEgo
-    self.hold_cruise_accel_5 = False
 
     self.cruise_bus = CanBus.PT_CAN
     if CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
@@ -134,15 +132,15 @@ class CarController(CarControllerBase):
       elif CC.enabled:
         if actuators.accel > 1.0 and not speed_diff_req < -12*CC_STEP:  #todo find out true max offset when holding - this is max offset for a single press and is larger
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
-        elif not CS.out.gasPressed and actuators.accel < -1.0 and not speed_diff_req > 12*CC_STEP:
+        elif actuators.accel < -1.0 and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif actuators.accel > 0.3 and not speed_diff_req < -5*CC_STEP:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
-        elif not CS.out.gasPressed and actuators.accel < -0.3 and not speed_diff_req > 5*CC_STEP: # expected maximum offset when holding plus1 is
+        elif actuators.accel < -0.3 and not speed_diff_req > 5*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req > CC_STEP/2 and actuators.accel >=0.0: # 0.0 if gasPressed
           cruise_cmd(CruiseStalk.plus1)
-        elif not CS.out.gasPressed and speed_diff_req < -CC_STEP/2 and actuators.accel < 0.0:
+        elif speed_diff_req < -CC_STEP/2 and actuators.accel < 0.0 and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1)
 
 
