@@ -127,23 +127,22 @@ class CarController(CarControllerBase):
         self.tx_cruise_stalk_counter_last = tx_cruise_stalk_counter
         self.last_cruise_tx_timestamp = now_nanos
 
-    if not cruise_stalk_human_pressing:
-      if self.cruise_cancel and CS.out.cruiseState.enabled:
+    if not cruise_stalk_human_pressing and CS.out.cruiseState.enabled:
+      if self.cruise_cancel:
         cruise_cmd(CruiseStalk.cancel)
         print("cancel")
-      elif CC.enabled and CS.out.cruiseState.enabled:
+      elif CC.enabled:
         if actuators.accel > 1.0 and not speed_diff_req < -12*CC_STEP:  #todo find out true max offset when holding - this is max offset for a single press and is larger
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
+        elif not CS.out.gasPressed and actuators.accel < -1.0 and not speed_diff_req > 12*CC_STEP:
+          cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif actuators.accel > 0.3 and not speed_diff_req < -5*CC_STEP:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
+        elif not CS.out.gasPressed and actuators.accel < -0.3 and not speed_diff_req > 5*CC_STEP: # expected maximum offset when holding plus1 is
+          cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req > CC_STEP/2 and actuators.accel >=0.0: # 0.0 if gasPressed
           cruise_cmd(CruiseStalk.plus1)
-      elif CC.enabled and CS.out.cruiseState.enabled and not CS.out.gasPressed:
-        if actuators.accel < -1.0 and not speed_diff_req > 12*CC_STEP:
-          cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
-        elif actuators.accel < -0.3 and not speed_diff_req > 5*CC_STEP: # expected maximum offset when holding plus1 is
-          cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
-        elif speed_diff_req < -CC_STEP/2 and actuators.accel < 0.0:
+        elif not CS.out.gasPressed and speed_diff_req < -CC_STEP/2 and actuators.accel < 0.0:
           cruise_cmd(CruiseStalk.minus1)
 
 
