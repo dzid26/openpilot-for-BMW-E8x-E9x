@@ -68,8 +68,6 @@ class CarController(CarControllerBase):
     self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, ACCEL_HYST_GAP / self.cruise_units)
     if not CS.out.cruiseState.enabled:
       self.cruise_speed_with_hyst = CS.out.vEgo
-    if accel_zero_cross:
-      self.cruise_speed_with_hyst = CS.out.cruiseState.speed
 
     # *** desired speed model ***
     if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
