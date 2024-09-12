@@ -59,8 +59,9 @@ class CarController(CarControllerBase):
 
     self.cruise_units = (CV.MS_TO_KPH if CS.is_metric else CV.MS_TO_MPH)
 
-    # detect acceleration sign change
-    accel_zero_cross = actuators.accel * self.actuators_accel_last < 0
+    # detect leaving acceleration range and entering speed range
+    speed_calcs_reset = actuators.accel < ACCEL_HOLD_MEDIUM and self.actuators_accel_last >= ACCEL_HOLD_MEDIUM \
+      or actuators.accel > DECEL_HOLD_MEDIUM and self.actuators_accel_last <= DECEL_HOLD_MEDIUM
     self.actuators_accel_last = actuators.accel
 
     # *** hysteresis - trend is your friend ***
@@ -70,7 +71,7 @@ class CarController(CarControllerBase):
       self.cruise_speed_with_hyst = CS.out.vEgo
 
     # *** desired speed model ***
-    if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
+    if speed_calcs_reset or not CC.enabled or CS.out.gasPressed:
       self.calc_desired_speed = CS.out.vEgo
     self.calc_desired_speed = self.calc_desired_speed + actuators.accel * DT_CTRL
     speed_diff_req = (self.calc_desired_speed - self.cruise_speed_with_hyst) * self.cruise_units
@@ -79,7 +80,7 @@ class CarController(CarControllerBase):
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
       self.tx_cruise_stalk_counter_last = CS.cruise_stalk_counter
       # stock message was sent some time in between control samples:
-      self.last_cruise_rx_timestamp = now_nanos #todo can be replaced with precise ts_nanos from can parser
+      self.last_cruise_rx_timestamp = now_nanos
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
 
     cruise_stalk_human_pressing = CS.cruise_stalk_plus \
@@ -133,6 +134,7 @@ class CarController(CarControllerBase):
         cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled:
+        # hold based on acceleration and single steps based on speed target
         if actuators.accel > ACCEL_HOLD_STRONG and not speed_diff_req < -12*CC_STEP:  #todo find out true max offset when holding - this is max offset for a single press and is larger
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
         elif actuators.accel < DECEL_HOLD_STRONG and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
