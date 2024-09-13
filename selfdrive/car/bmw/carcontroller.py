@@ -139,9 +139,12 @@ class CarController(CarControllerBase):
         cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled:
-        if self.accel_with_hyst > ACCEL_HOLD_STRONG and not speed_diff_req < -12*CC_STEP:  #todo find out true max offset when holding - this is max offset for a single press and is larger
+        #todo: find out true max offset when holding - 12 etc, is max offset for a single press and is larger
+        if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) > 1)) \
+            and not speed_diff_req < -12*CC_STEP:
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
-        elif self.accel_with_hyst < DECEL_HOLD_STRONG and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
+        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) < -1)) \
+            and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_diff_req < -5*CC_STEP:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
