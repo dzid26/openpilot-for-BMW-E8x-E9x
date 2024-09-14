@@ -16,7 +16,7 @@ CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk
 CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
-CRUISE_STALK_HOLD_TICK = 0.01 # emulate held stalk, use only fully divisible values, i.e. 0.05, 0.02, 0.01
+CRUISE_STALK_HOLD_TICK = 0.01 # emulate held stalk, 100Hz makes stock messages be ignored
 
 CRUISE_SPEED_HYST_GAP = CC_STEP * 0.8  # between 0 and CC_STEP
 ACCEL_HYST_GAP = 0.05 # m/s^2
@@ -73,7 +73,7 @@ class CarController(CarControllerBase):
 
 
     # *** desired speed model ***
-    # detect acceleration sign change
+    # detect filtered acceleration sign change and reset speed calc on change
     accel_zero_cross = self.accel_with_hyst * self.accel_with_hyst_last < 0
     self.accel_with_hyst_last = self.accel_with_hyst
     if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
@@ -143,7 +143,7 @@ class CarController(CarControllerBase):
         if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) > 1)) \
             and not speed_diff_req < -12*CC_STEP:
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
-        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) < -1)) \
+        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) < -1)) \
             and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_diff_req < -5*CC_STEP:
