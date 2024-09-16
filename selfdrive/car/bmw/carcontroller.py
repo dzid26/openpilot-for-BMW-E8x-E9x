@@ -146,9 +146,9 @@ class CarController(CarControllerBase):
         elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and (CS.out.vEgo - self.calc_desired_speed) < -1)) \
             and not speed_diff_req > 12*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
-        elif self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_diff_req < -5*CC_STEP:
+        elif (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_diff_req < -5*CC_STEP) or (CS.out.vEgo - self.calc_desired_speed) > 1:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
-        elif self.accel_with_hyst < DECEL_HOLD_MEDIUM and not speed_diff_req > 5*CC_STEP and not CS.out.gasPressed:
+        elif ((self.accel_with_hyst < DECEL_HOLD_MEDIUM and not speed_diff_req > 5*CC_STEP) or (CS.out.vEgo - self.calc_desired_speed) < -1) and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
         elif speed_diff_req > CC_STEP/2 and self.accel_with_hyst > 0.0: # todo: (accel>0 or gasPressed) ??
           cruise_cmd(CruiseStalk.plus1)
