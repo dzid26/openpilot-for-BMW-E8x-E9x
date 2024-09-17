@@ -89,27 +89,9 @@ class CarController(CarControllerBase):
       self.last_cruise_rx_timestamp = now_nanos
     self.rx_cruise_stalk_counter_last = CS.cruise_stalk_counter
 
-    cruise_stalk_human_pressing = CS.cruise_stalk_plus \
-                               or CS.cruise_stalk_minus \
-                               or CS.cruise_stalk_plus5 \
-                               or CS.cruise_stalk_minus5 \
-                               or CS.cruise_stalk_resume \
-                               or CS.cruise_stalk_cancel
 
 
-    # *** cruise control cancel signal ***
-    # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
-    # CC.enabled appears after cruiseState.enabled, so we need to check rising edge to prevent instantaneous cancel after cruise is enabled
-    # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
-    if not CC.enabled and self.cruise_enabled_prev:
-      self.cruise_cancel = True
-    # if we need to go below cruise speed, request cancel and coast while steering enabled
-    if (CS.out.cruiseState.speedCluster - self.min_cruise_speed) < 0.1 and actuators.accel < -0.1 \
-      and speed_err_act < -1 and CS.out.vEgoCluster - self.min_cruise_speed < 0.4:
-      self.cruise_cancel = True
-    # keep requesting cancel until the cruise is disabled
-    if not CS.out.cruiseState.enabled:
-      self.cruise_cancel = False
+
 
     # *** send cruise control stalk message at different rates and manage counters ***
     def cruise_cmd(cmd, hold=False):
@@ -134,6 +116,24 @@ class CarController(CarControllerBase):
         can_sends.append(bmwcan.create_accel_command(self.packer, cmd, self.cruise_bus, tx_cruise_stalk_counter))
         self.tx_cruise_stalk_counter_last = tx_cruise_stalk_counter
         self.last_cruise_tx_timestamp = now_nanos
+
+    # *** cruise control cancel signal ***
+    # CC.cruiseControl.cancel can't be used because it is always false because pcmCruise = False because we need OP speed tracker
+    # CC.enabled appears after cruiseState.enabled, so we need to check rising edge to prevent instantaneous cancel after cruise is enabled
+    # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
+    if not CC.enabled and self.cruise_enabled_prev:
+      self.cruise_cancel = True
+    # if we need to go below cruise speed, request cancel and coast while steering enabled
+    if (CS.out.cruiseState.speedCluster - self.min_cruise_speed) < 0.1 and actuators.accel < -0.1 \
+      and speed_err_act < -1 and CS.out.vEgoCluster - self.min_cruise_speed < 0.4:
+      self.cruise_cancel = True
+    # keep requesting cancel until the cruise is disabled
+    if not CS.out.cruiseState.enabled:
+      self.cruise_cancel = False
+
+    cruise_stalk_human_pressing = CS.cruise_stalk_plus or CS.cruise_stalk_minus \
+                               or CS.cruise_stalk_plus5 or CS.cruise_stalk_minus5 \
+                               or CS.cruise_stalk_resume or CS.cruise_stalk_cancel
 
     if not cruise_stalk_human_pressing and CS.out.cruiseState.enabled:
       if self.cruise_cancel:
