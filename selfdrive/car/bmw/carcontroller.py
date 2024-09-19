@@ -169,14 +169,15 @@ class CarController(CarControllerBase):
                                              CarControllerParams.STEER_DELTA_UP, CarControllerParams.STEER_DELTA_DOWN,
                                              CarControllerParams.STEER_ERROR_MAX, CarControllerParams.STEER_MAX)
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
-          # *** control msgs ***
-          if (self.frame % 10) == 0: #slow print
-            frame_number = self.frame
-            print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgo}, Frame number: {frame_number}")
         else:
           apply_steer = 0
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
         self.apply_steer_last = apply_steer
+
+    # debug
+    if CC.enabled and (self.frame % 10) == 0: #slow print
+      frame_number = self.frame
+      print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgo}, Frame number: {frame_number}")
 
     self.cruise_enabled_prev = CC.enabled
 
