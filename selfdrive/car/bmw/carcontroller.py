@@ -18,7 +18,7 @@ CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stal
 CRUISE_STALK_SINGLE_TICK = CRUISE_STALK_IDLE_TICK_STOCK # we will send also at 5Hz in between stock messages to emulate single presses
 CRUISE_STALK_HOLD_TICK = 0.01 # emulate held stalk, 100Hz makes stock messages be ignored
 
-CRUISE_SPEED_HYST_GAP = CC_STEP * 0.8  # between 0 and CC_STEP
+CRUISE_SPEED_HYST_GAP = CC_STEP * 0.6  # between >0.5 and <1 to avoid cruise speed toggling. More than 0.5 to add some phase lead
 ACCEL_HYST_GAP = 0.05 # m/s^2
 
 ACCEL_HOLD_MEDIUM = 0.4
