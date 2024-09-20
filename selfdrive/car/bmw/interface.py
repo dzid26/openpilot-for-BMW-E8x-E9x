@@ -154,7 +154,7 @@ class CarInterface(CarInterfaceBase):
           events.add(EventName.speedTooLow) # can't restart cruise anymore
 
     # *** disable/enable OpenPilot on resume button press ***
-    resume_rising_edge = self.CS.cruise_stalk_resume and not self.CS.prev_cruise_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
+    resume_rising_edge = self.CS.cruise_stalk_resume and not self.CS.prev_cruise_stalk_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
     if resume_rising_edge and c.enabled:
       events.add(EventName.buttonCancel)
     # when in cruise control, press resume to resume OpenPilot
