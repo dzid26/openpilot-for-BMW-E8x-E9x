@@ -70,6 +70,7 @@ class CarInterface(CarInterfaceBase):
       ret.flags |= BmwFlags.STEPPER_SERVO_CAN.value
 
     ret.openpilotLongitudinalControl = True
+    ret.radarUnavailable = True
     ret.pcmCruise = False # use OP speed tracking because we control speed using stock cruise speed setpoint or stock cruise is disabled
 
     ret.autoResumeSng = False
@@ -101,7 +102,6 @@ class CarInterface(CarInterfaceBase):
 
     ret.carName = "bmw"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.bmw)]
-    ret.radarUnavailable = True
 
     ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.6
@@ -139,10 +139,10 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_F, self.cp_aux)
 
     ret.buttonEvents = [
-      *create_button_events(self.CS.cruise_stalk_plus, self.CS.prev_cruise_plus, {1: ButtonType.accelCruise}),
-      *create_button_events(self.CS.cruise_stalk_minus, self.CS.prev_cruise_minus, {1: ButtonType.decelCruise}),
-      *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_resume, {1: ButtonType.resumeCruise}),
-      *create_button_events(self.CS.cruise_stalk_cancel, self.CS.prev_cruise_cancel, {1: ButtonType.cancel}),
+      *create_button_events(self.CS.cruise_stalk_speed > 0, self.CS.prev_cruise_stalk_speed > 0, {1: ButtonType.accelCruise}),
+      *create_button_events(self.CS.cruise_stalk_speed < 0, self.CS.prev_cruise_stalk_speed < 0, {1: ButtonType.decelCruise}),
+      *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_stalk_resume, {1: ButtonType.resumeCruise}),
+      *create_button_events(self.CS.cruise_stalk_cancel, self.CS.prev_cruise_stalk_cancel, {1: ButtonType.cancel}),
       *create_button_events(self.CS.other_buttons, not self.CS.other_buttons, {1: ButtonType.altButton1}),
     ]
 

@@ -17,23 +17,15 @@ class CarState(CarStateBase):
     self.cluster_min_speed = CruiseSettings.CLUSTER_OFFSET
 
     self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo set is_metric in _get_params somehow
-    self.cruise_stalk_plus = False
-    self.cruise_stalk_minus = False
-    self.cruise_stalk_plus5 = False
-    self.cruise_stalk_minus5 = False
+    self.cruise_stalk_speed = 0
     self.cruise_stalk_resume = False
     self.cruise_stalk_cancel = False
     self.cruise_stalk_cancel_up = False
     self.cruise_stalk_cancel_dn = False
     self.cruise_stalk_counter = 0
-    self.prev_cruise_plus = self.cruise_stalk_plus
-    self.prev_cruise_minus = self.cruise_stalk_minus
-    self.prev_cruise_plus5 = self.cruise_stalk_plus5
-    self.prev_cruise_minus5 = self.cruise_stalk_minus5
-    self.prev_cruise_resume = self.cruise_stalk_resume
-    self.prev_cruise_cancel = self.cruise_stalk_cancel
-    self.prev_cruise_cancel_stalk_up = self.cruise_stalk_cancel_up
-    self.prev_cruise_cancel_stalk_down = self.cruise_stalk_cancel_dn
+    self.prev_cruise_stalk_speed = 0
+    self.prev_cruise_stalk_resume = self.cruise_stalk_resume
+    self.prev_cruise_stalk_cancel = self.cruise_stalk_cancel
 
     self.right_blinker_pressed = False
     self.left_blinker_pressed = False
@@ -43,14 +35,9 @@ class CarState(CarStateBase):
 
   def update(self, cp_PT, cp_F, cp_aux):
     # set these prev states at the beginning because they are used outside the update()
-    self.prev_cruise_plus = self.cruise_stalk_plus
-    self.prev_cruise_minus = self.cruise_stalk_minus
-    self.prev_cruise_plus5 = self.cruise_stalk_plus5
-    self.prev_cruise_minus5 = self.cruise_stalk_minus5
-    self.prev_cruise_resume = self.cruise_stalk_resume
-    self.prev_cruise_cancel = self.cruise_stalk_cancel
-    self.prev_cruise_cancel_stalk_up = self.cruise_stalk_cancel_up
-    self.prev_cruise_cancel_stalk_down = self.cruise_stalk_cancel_dn
+    self.prev_cruise_stalk_speed = self.cruise_stalk_speed
+    self.prev_cruise_stalk_resume = self.cruise_stalk_resume
+    self.prev_cruise_stalk_cancel = self.cruise_stalk_cancel
 
     ret = car.CarState.new_message()
 
@@ -126,10 +113,16 @@ class CarState(CarStateBase):
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
     ret.cruiseState.speedCluster = ret.cruiseState.speed + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS #For logging. Doesn't do anything with pcmCruise = False
-    self.cruise_stalk_plus = cruise_control_stal_msg['plus1'] != 0
-    self.cruise_stalk_minus = cruise_control_stal_msg['minus1'] != 0
-    self.cruise_stalk_plus5 = cruise_control_stal_msg['plus5'] != 0
-    self.cruise_stalk_minus5 = cruise_control_stal_msg['minus5'] != 0
+    if cruise_control_stal_msg['plus1'] != 0:
+      self.cruise_stalk_speed = 1
+    elif cruise_control_stal_msg['minus1'] != 0:
+      self.cruise_stalk_speed = -1
+    elif cruise_control_stal_msg['plus5'] != 0:
+      self.cruise_stalk_speed = 5
+    elif cruise_control_stal_msg['minus5'] != 0:
+      self.cruise_stalk_speed = -5
+    else:
+      self.cruise_stalk_speed = 0
     self.cruise_stalk_resume = cruise_control_stal_msg['resume'] != 0
     self.cruise_stalk_cancel = cruise_control_stal_msg['cancel'] != 0
     self.cruise_stalk_cancel_up = cruise_control_stal_msg['cancel_lever_up'] != 0

@@ -131,9 +131,7 @@ class CarController(CarControllerBase):
     if not CS.out.cruiseState.enabled:
       self.cruise_cancel = False
 
-    cruise_stalk_human_pressing = CS.cruise_stalk_plus or CS.cruise_stalk_minus \
-                               or CS.cruise_stalk_plus5 or CS.cruise_stalk_minus5 \
-                               or CS.cruise_stalk_resume or CS.cruise_stalk_cancel
+    cruise_stalk_human_pressing = CS.cruise_stalk_resume or CS.cruise_stalk_cancel or CS.cruise_stalk_speed != 0
 
     if not cruise_stalk_human_pressing and CS.out.cruiseState.enabled:
       if self.cruise_cancel:
