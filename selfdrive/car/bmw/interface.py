@@ -141,10 +141,11 @@ class CarInterface(CarInterfaceBase):
     ret.buttonEvents = [
       *create_button_events(self.CS.cruise_stalk_speed > 0, self.CS.prev_cruise_stalk_speed > 0, {1: ButtonType.accelCruise}),
       *create_button_events(self.CS.cruise_stalk_speed < 0, self.CS.prev_cruise_stalk_speed < 0, {1: ButtonType.decelCruise}),
-      *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_stalk_resume, {1: ButtonType.resumeCruise}),
       *create_button_events(self.CS.cruise_stalk_cancel, self.CS.prev_cruise_stalk_cancel, {1: ButtonType.cancel}),
       *create_button_events(self.CS.other_buttons, not self.CS.other_buttons, {1: ButtonType.altButton1}),
-    ]
+      *create_button_events(self.CS.cruise_stalk_resume, self.CS.prev_cruise_stalk_resume, {
+        1: ButtonType.resumeCruise if not c.enabled else ButtonType.gapAdjustCruise}) # repurpose resume button to adjust driver personality when engaged
+      ]
 
     # events
     events = self.create_common_events(ret, pcm_enable=True)
@@ -152,16 +153,6 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.belowEngageSpeed)
       if c.actuators.accel > 0.2:
           events.add(EventName.speedTooLow) # can't restart cruise anymore
-
-    # *** disable/enable OpenPilot on resume button press ***
-    resume_rising_edge = self.CS.cruise_stalk_resume and not self.CS.prev_cruise_stalk_resume and ret.cruiseState.enabled and self.CS.out.cruiseState.enabled
-    if resume_rising_edge and c.enabled:
-      events.add(EventName.buttonCancel)
-    # when in cruise control, press resume to resume OpenPilot
-    elif resume_rising_edge and not c.enabled:
-      events.add(EventName.buttonEnable)
-    # if self.CS.gas_kickdown: # todo do we want disable on kickdown?
-    #   events.add(EventName.pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
     ret.events = events.to_msg()
 
