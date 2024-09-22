@@ -46,6 +46,7 @@ class CarState(CarStateBase):
     ret.brakePressed = cp_PT.vl["EngineAndBrake"]['BrakePressed'] != 0
     ret.parkingBrake = cp_PT.vl["Status_contact_handbrake"]["Handbrake_pulled_up"] != 0
     ret.gas = cp_PT.vl['AccPedal']["AcceleratorPedalPercentage"]
+    # on some cars, when cruise is engaged, half pressed pedal becomes "KickDownPressed", even without pressing kickdown end stop
     ret.gasPressed = cp_PT.vl['AccPedal']["AcceleratorPedalPressed"] != 0 or cp_PT.vl['AccPedal']["KickDownPressed"] != 0
     self.gas_kickdown = cp_PT.vl['AccPedal']["KickDownPressed"] != 0 #BMW has kickdown button at the bottom of the pedal
 
