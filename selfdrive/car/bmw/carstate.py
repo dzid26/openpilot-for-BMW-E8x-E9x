@@ -112,7 +112,7 @@ class CarState(CarStateBase):
       ret.steeringAngleDeg = cp_PT.vl['SteeringWheelAngle']['SteeringPosition']
       ret.cruiseState.speed = cp_PT.vl["CruiseControlStatus"]['CruiseControlSetpointSpeed'] * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
       ret.cruiseState.enabled = cp_PT.vl["CruiseControlStatus"]['CruiseCoontrolActiveFlag'] != 0
-    ret.cruiseState.speedCluster = ret.cruiseState.speed + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS
+    ret.cruiseState.speedCluster = ret.cruiseState.speed + CruiseSettings.CLUSTER_OFFSET * CV.KPH_TO_MS #For logging. Doesn't do anything with pcmCruise = False
     if cruise_control_stal_msg['plus1'] != 0:
       self.cruise_stalk_speed = 1
     elif cruise_control_stal_msg['minus1'] != 0:
