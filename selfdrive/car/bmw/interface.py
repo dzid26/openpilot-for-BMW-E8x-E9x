@@ -6,7 +6,6 @@ from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.bmw.values import CanBus, BmwFlags, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
-from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -36,7 +35,6 @@ def detect_stepper_override(steer_cmd, steer_act, v_ego, centering_coeff, steer_
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
-    self.VM = VehicleModel(CP)  # for the yawRate
 
     self.cp_F = self.CS.get_F_can_parser(CP)
     self.can_parsers.append(self.cp_F)
@@ -138,6 +136,23 @@ class CarInterface(CarInterfaceBase):
     # ******************* do can recv *******************
     ret = self.CS.update(self.cp, self.cp_F, self.cp_aux)
 
+    # events
+    events = self.create_common_events(ret, pcm_enable=True)
+
+    # *** cruise control units detection ***
+    # when cruise is enabled the car sets cruiseState.speed = vEgo, so we can detect the ratio
+    # with resume this wouldn't work, but op will not engage on first resume anyway
+    if self.CS.is_metric is None and c.enabled and ret.vEgo > 0:
+      # note, when is_metric is None, cruiseState.speed is already scaled by CV.MPH_TO_MS by default
+      speed_ratio = ret.cruiseState.speed / ret.vEgo  # 1 if imperial, 1.6 if metric
+      if 0.8 < speed_ratio < 1.2:
+        self.CS.is_metric = False
+      elif 0.8 * CV.MPH_TO_KPH < speed_ratio < 1.2 * CV.MPH_TO_KPH:
+        self.CS.is_metric = True
+      else:
+        events.add(EventName.accFaulted)
+
+
     ret.buttonEvents = [
       *create_button_events(self.CS.cruise_stalk_speed > 0, self.CS.prev_cruise_stalk_speed > 0, {1: ButtonType.accelCruise}),
       *create_button_events(self.CS.cruise_stalk_speed < 0, self.CS.prev_cruise_stalk_speed < 0, {1: ButtonType.decelCruise}),
@@ -147,8 +162,6 @@ class CarInterface(CarInterfaceBase):
         1: ButtonType.resumeCruise if not c.enabled else ButtonType.gapAdjustCruise}) # repurpose resume button to adjust driver personality when engaged
       ]
 
-    # events
-    events = self.create_common_events(ret, pcm_enable=True)
     if ret.vEgoCluster < self.CP.minEnableSpeed:
       events.add(EventName.belowEngageSpeed)
       if c.actuators.accel > 0.2:

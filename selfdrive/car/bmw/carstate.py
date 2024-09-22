@@ -4,7 +4,6 @@ from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.bmw.values import DBC, CanBus, BmwFlags, CruiseSettings
-from openpilot.common.params import Params
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -16,7 +15,7 @@ class CarState(CarStateBase):
 
     self.cluster_min_speed = CruiseSettings.CLUSTER_OFFSET
 
-    self.is_metric = Params().get("IsMetric", encoding='utf8') == "1"   #todo set is_metric in _get_params somehow
+    self.is_metric = None
     self.cruise_stalk_speed = 0
     self.cruise_stalk_resume = False
     self.cruise_stalk_cancel = False
@@ -93,12 +92,6 @@ class CarState(CarStateBase):
     ret.cruiseState.available = not ret.espDisabled  #cruise not available when DSC fully off
     ret.cruiseState.nonAdaptive = False # bmw doesn't have a switch
 
-    # todo # *** determine is_metric based speed target vs actual speed ***
-    # if ret.cruiseState.enabled:
-    #   if abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_KPH) < 0.3:
-    #     self.is_metric = True
-    #   elif abs(ret.cruiseState.speed / ret.vEgo - CV.MS_TO_MPH) < 0.3:
-    #     self.is_metric = False
 
     cruise_control_stal_msg = cp_PT.vl["CruiseControlStalk"]
     if self.CP.flags & BmwFlags.DYNAMIC_CRUISE_CONTROL:
