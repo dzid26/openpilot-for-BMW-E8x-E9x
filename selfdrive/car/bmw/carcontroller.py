@@ -11,7 +11,6 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 # DO NOT CHANGE: Cruise control step size
 CC_STEP = 1 # cruise single click jump - always 1 - interpreted as km or miles depending on DSC or DME set units
-ACCEL_HYST_GAP = 0.9 * CC_STEP
 CRUISE_STALK_IDLE_TICK_STOCK = 0.2 # stock cruise stalk CAN frequency when stalk is not pressed is 5Hz
 CRUISE_STALK_HOLD_TICK_STOCK = 0.05 # stock cruise stalk CAN frequency when stalk is pressed is 20Hz
 
@@ -139,11 +138,11 @@ class CarController(CarControllerBase):
         print("cancel")
       elif CC.enabled:
         #todo: find out true max offset when holding - 12 etc, is max offset for a single press and is larger
-        if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and speed_err_act > 1)) \
-            and not speed_err_req < -12*CC_STEP:
+        if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and speed_err_act > 1.5)) \
+            and not speed_err_req < -6*CC_STEP:
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
-        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and speed_err_act < -1)) \
-            and not speed_err_req > 12*CC_STEP and not CS.out.gasPressed:
+        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and speed_err_act < -1.5)) \
+            and not speed_err_req > 8*CC_STEP and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_err_req < -5*CC_STEP) or speed_err_act > 1:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
