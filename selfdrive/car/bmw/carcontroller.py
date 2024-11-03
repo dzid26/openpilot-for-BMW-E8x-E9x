@@ -20,8 +20,8 @@ CRUISE_STALK_HOLD_TICK = 0.01 # emulate held stalk, 100Hz makes stock messages b
 CRUISE_SPEED_HYST_GAP = CC_STEP * 0.6  # between >0.5 and <1 to avoid cruise speed toggling. More than 0.5 to add some phase lead
 ACCEL_HYST_GAP = 0.05 # m/s^2
 
-ACCEL_HOLD_MEDIUM = 0.6
-DECEL_HOLD_MEDIUM = -0.8
+ACCEL_HOLD_MEDIUM = 0.4
+DECEL_HOLD_MEDIUM = -0.6
 ACCEL_HOLD_STRONG = 1.2
 DECEL_HOLD_STRONG = -1.2
 
