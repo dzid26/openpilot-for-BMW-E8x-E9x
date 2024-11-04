@@ -12,6 +12,20 @@
       ]
     },
     {
+      "id": "python_process_name",
+      "type": "pickString",
+      "description": "Select the process to debug",
+      "options": [
+        "card",
+        "controlsd",
+      ]
+    },
+    {
+      "id": "route",
+      "type": "promptString",
+      "description": "Route / segment",
+    },
+    {
       "id": "cpp_process",
       "type": "pickString",
       "description": "Select the process to debug",
@@ -27,20 +41,12 @@
   ],
   "configurations": [
     {
-      "name": "Replay carcontroler on route",
+      "name": "Replay process on route",
       "type": "debugpy",
       "request": "launch",
       "program": "openpilot/selfdrive/debug/run_process_on_route.py",
       "console": "integratedTerminal",
-      "args": ["${command:pickArgs}", "card"]
-    },
-    {
-      "name": "Replay controlsd on route",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "openpilot/selfdrive/debug/run_process_on_route.py",
-      "console": "integratedTerminal",
-      "args": ["${command:pickArgs}", "controlsd"]
+      "args": ["${input:route}", "${input:python_process_name}",]
     },
     {
       "name": "Python: openpilot Process",
