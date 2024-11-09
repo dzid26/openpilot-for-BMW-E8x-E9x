@@ -130,6 +130,8 @@ class CarState(CarStateBase):
       ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
       self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
       ret.steerFaultTemporary = int(cp_aux.vl['STEERING_STATUS']['CONTROL_STATUS']) & 0x4 != 0
+    else:
+      ret.steerFaultTemporary = True # avoid Control Mismach error if STEPPER_SERVO_CAN is not available
 
     self.prev_gas_pressed = ret.gasPressed
     return ret

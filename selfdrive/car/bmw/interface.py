@@ -114,7 +114,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.torque.useSteeringAngle = False
     ret.lateralTuning.torque.steeringAngleDeadzoneDeg = 0.0 # backlash of stepper?
 
-    ret.longitudinalActuatorDelay = 0.5 #s, Gas/Brake actuator delay
+    ret.longitudinalActuatorDelay = 1.0 #s, Gas/Brake actuator delay
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [.1]
     ret.longitudinalTuning.kiBP = [0.]
