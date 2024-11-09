@@ -105,13 +105,14 @@ class CarInterface(CarInterfaceBase):
     ret.steerActuatorDelay = 0.6
     ret.steerLimitTimer = 0.4
     ret.lateralTuning.init('torque')
+    CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
     ret.lateralTuning.torque.kp = 1.5 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.ki = 0.5 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.kf = 6.0 / CarControllerParams.STEER_MAX
-    ret.lateralTuning.torque.friction = 0.24
-    ret.lateralTuning.torque.latAccelFactor = 1.2
-    ret.lateralTuning.torque.latAccelOffset = -0.25
-    ret.lateralTuning.torque.useSteeringAngle = False
+    #ret.lateralTuning.torque.friction = 0.24
+    #ret.lateralTuning.torque.latAccelFactor = 1.2
+    #ret.lateralTuning.torque.latAccelOffset = -0.25
+    ret.lateralTuning.torque.useSteeringAngle = True
     ret.lateralTuning.torque.steeringAngleDeadzoneDeg = 0.0 # backlash of stepper?
 
     ret.longitudinalActuatorDelay = 1.0 #s, Gas/Brake actuator delay
