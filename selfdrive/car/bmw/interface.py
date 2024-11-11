@@ -109,7 +109,6 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.torque.kp = 1.5 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.ki = 0.5 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.kf = 7.0 / CarControllerParams.STEER_MAX
-    ret.lateralTuning.torque.latAccelOffset = -0.20
     ret.lateralTuning.torque.useSteeringAngle = True
     ret.lateralTuning.torque.steeringAngleDeadzoneDeg = 0.0 # backlash of stepper?
 
