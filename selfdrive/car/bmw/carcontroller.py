@@ -21,9 +21,9 @@ CRUISE_SPEED_HYST_GAP = CC_STEP * 0.6  # between >0.5 and <1 to avoid cruise spe
 ACCEL_HYST_GAP = 0.05 # m/s^2
 
 ACCEL_HOLD_MEDIUM = 0.4
-DECEL_HOLD_MEDIUM = -0.3
-ACCEL_HOLD_STRONG = 1.0
-DECEL_HOLD_STRONG = -1.0
+DECEL_HOLD_MEDIUM = -0.6
+ACCEL_HOLD_STRONG = 1.2
+DECEL_HOLD_STRONG = -1.2
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP):
@@ -137,20 +137,21 @@ class CarController(CarControllerBase):
         cruise_cmd(CruiseStalk.cancel)
         print("cancel")
       elif CC.enabled:
-        #todo: find out true max offset when holding - 12 etc, is max offset for a single press and is larger
-        if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and speed_err_act > 1.5)) \
-            and not speed_err_req < -6*CC_STEP:
+        if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and speed_err_act > 3.0)) \
+            and not speed_err_req < -15*CV.KPH_TO_MS*self.cruise_units:
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
-        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and speed_err_act < -1.5)) \
-            and not speed_err_req > 8*CC_STEP and not CS.out.gasPressed:
+        elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and speed_err_act < -3.0)) \
+            and not speed_err_req > 15*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
-        elif (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and not speed_err_req < -5*CC_STEP) or speed_err_act > 1:
+        elif (self.accel_with_hyst > ACCEL_HOLD_MEDIUM or speed_err_act > 2.0) \
+            and not speed_err_req < -10*CV.KPH_TO_MS*self.cruise_units:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
-        elif ((self.accel_with_hyst < DECEL_HOLD_MEDIUM and not speed_err_req > 5*CC_STEP) or speed_err_act < -1) and not CS.out.gasPressed:
+        elif (self.accel_with_hyst < DECEL_HOLD_MEDIUM or speed_err_act < -2.0) \
+            and not speed_err_req > 10*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
-        elif speed_err_req > CC_STEP/2 and self.accel_with_hyst > 0.0: # todo: (accel>0 or gasPressed) ??
+        elif speed_err_req > max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst > 0.0: # todo: (accel>0 or gasPressed) ??
           cruise_cmd(CruiseStalk.plus1)
-        elif speed_err_req < -CC_STEP/2 and self.accel_with_hyst < 0.0 and not CS.out.gasPressed:
+        elif speed_err_req < -max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst < 0.0 and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1)
 
 
