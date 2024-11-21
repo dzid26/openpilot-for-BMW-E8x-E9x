@@ -158,7 +158,7 @@ class CarController(CarControllerBase):
 
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
       steer_error =  not CC.latActive and CC.enabled
-      if not steer_error and not CS.dtc_mode: # stop steer CAN tx when DTC is On or if steering is unavailable (unless user cancels)
+      if not steer_error: # stop steer CAN tx if steering is unavailable (unless user cancels) #todo soft off when user didn't cancelled
         # *** apply steering torque ***
         if CC.enabled:
           new_steer = actuators.steer * CarControllerParams.STEER_MAX
