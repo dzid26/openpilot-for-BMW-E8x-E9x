@@ -124,12 +124,12 @@ class CarState(CarStateBase):
     self.cruise_stalk_cancel_dn = self.cruise_stalk_cancel and not self.cruise_stalk_cancel_up
 
 
-    ret.genericToggle = self.dtc_mode
-
     if self.CP.flags & BmwFlags.STEPPER_SERVO_CAN:
       ret.steeringTorqueEps =  cp_aux.vl['STEERING_STATUS']['STEERING_TORQUE']
       self.steer_angle_delta = cp_aux.vl['STEERING_STATUS']['STEERING_ANGLE']
       ret.steerFaultTemporary = int(cp_aux.vl['STEERING_STATUS']['CONTROL_STATUS']) & 0x4 != 0
+    else:
+      ret.steerFaultPermanent = True
 
     self.prev_gas_pressed = ret.gasPressed
     return ret
