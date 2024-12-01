@@ -104,10 +104,11 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.torque
     ret.steerActuatorDelay = 0.6
     ret.steerLimitTimer = 0.4
-    ret.lateralTuning.init('torque')
+
+    CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
     ret.lateralTuning.torque.kp = 1.5 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.ki = 0.5 / CarControllerParams.STEER_MAX
-    ret.lateralTuning.torque.kf = 7.0 / CarControllerParams.STEER_MAX
+    ret.lateralTuning.torque.kf = 5.0 / CarControllerParams.STEER_MAX
     ret.lateralTuning.torque.friction = 0.23 #live parameters
     ret.lateralTuning.torque.latAccelFactor = 1.41 #live parameters
     ret.lateralTuning.torque.useSteeringAngle = False
