@@ -149,7 +149,7 @@ class CarController(CarControllerBase):
         elif (self.accel_with_hyst < DECEL_HOLD_MEDIUM or speed_err_act < -2.0) \
             and not speed_err_req > 10*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
-        elif speed_err_req > max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst > 0.0: # todo: (accel>0 or gasPressed) ??
+        elif speed_err_req > max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and (self.accel_with_hyst > 0.0 or CS.out.gasPressed):
           cruise_cmd(CruiseStalk.plus1)
         elif speed_err_req < -max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst < 0.0 and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1)
