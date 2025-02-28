@@ -65,7 +65,7 @@ class CarController(CarControllerBase):
     # avoids cruise speed toggling and biases next request toward the direction of the previous one
     self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CRUISE_SPEED_HYST_GAP / self.cruise_units)
     if not CS.out.cruiseState.enabled:
-      self.cruise_speed_with_hyst = CS.out.vEgo
+      self.cruise_speed_with_hyst = CS.out.vEgoCluster
 
     # acceleration target hysteresis - avoids entering / leaving hold stalk emulation to frequently, etc
     self.accel_with_hyst = apply_hysteresis(actuators.accel, self.accel_with_hyst, ACCEL_HYST_GAP)
@@ -76,10 +76,10 @@ class CarController(CarControllerBase):
     accel_zero_cross = self.accel_with_hyst * self.accel_with_hyst_last < 0
     self.accel_with_hyst_last = self.accel_with_hyst
     if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
-      self.calc_desired_speed = CS.out.vEgo
+      self.calc_desired_speed = CS.out.vEgoCluster
     self.calc_desired_speed = self.calc_desired_speed + actuators.accel * DT_CTRL
     speed_err_req = (self.calc_desired_speed - self.cruise_speed_with_hyst) * self.cruise_units
-    speed_err_act = self.calc_desired_speed - CS.out.vEgo
+    speed_err_act = self.calc_desired_speed - CS.out.vEgoCluster
 
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
@@ -175,7 +175,7 @@ class CarController(CarControllerBase):
     # debug
     if CC.enabled and (self.frame % 10) == 0: #slow print
       frame_number = self.frame
-      print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgo}, Frame number: {frame_number}")
+      print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgoCluster}, Frame number: {frame_number}")
 
     self.cruise_enabled_prev = CC.enabled
 
