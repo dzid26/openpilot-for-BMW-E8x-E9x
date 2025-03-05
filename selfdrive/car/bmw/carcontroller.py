@@ -65,7 +65,7 @@ class CarController(CarControllerBase):
     # avoids cruise speed toggling and biases next request toward the direction of the previous one
     self.cruise_speed_with_hyst = apply_hysteresis(CS.out.cruiseState.speed, self.cruise_speed_with_hyst, CRUISE_SPEED_HYST_GAP / self.cruise_units)
     if not CS.out.cruiseState.enabled:
-      self.cruise_speed_with_hyst = CS.out.vEgo
+      self.cruise_speed_with_hyst = CS.out.vEgoCluster
 
     # acceleration target hysteresis - avoids entering / leaving hold stalk emulation to frequently, etc
     self.accel_with_hyst = apply_hysteresis(actuators.accel, self.accel_with_hyst, ACCEL_HYST_GAP)
@@ -76,10 +76,10 @@ class CarController(CarControllerBase):
     accel_zero_cross = self.accel_with_hyst * self.accel_with_hyst_last < 0
     self.accel_with_hyst_last = self.accel_with_hyst
     if accel_zero_cross or not CC.enabled or CS.out.gasPressed:
-      self.calc_desired_speed = CS.out.vEgo
+      self.calc_desired_speed = CS.out.vEgoCluster
     self.calc_desired_speed = self.calc_desired_speed + actuators.accel * DT_CTRL
     speed_err_req = (self.calc_desired_speed - self.cruise_speed_with_hyst) * self.cruise_units
-    speed_err_act = self.calc_desired_speed - CS.out.vEgo
+    speed_err_act = self.calc_desired_speed - CS.out.vEgoCluster
 
     # detect incoming CruiseControlStalk message by observing counter change (message arrives at only 5Hz when nothing pressed)
     if CS.cruise_stalk_counter != self.rx_cruise_stalk_counter_last:
@@ -138,18 +138,18 @@ class CarController(CarControllerBase):
         print("cancel")
       elif CC.enabled:
         if (self.accel_with_hyst > ACCEL_HOLD_STRONG or (self.accel_with_hyst > ACCEL_HOLD_MEDIUM and speed_err_act > 3.0)) \
-            and not speed_err_req < -15*CV.KPH_TO_MS*self.cruise_units:
+            and not speed_err_req < -10*CV.KPH_TO_MS*self.cruise_units:
           cruise_cmd(CruiseStalk.plus5, hold=True) # produces up to 1.2 m/s2
         elif (self.accel_with_hyst < DECEL_HOLD_STRONG or (self.accel_with_hyst < DECEL_HOLD_MEDIUM and speed_err_act < -3.0)) \
-            and not speed_err_req > 15*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
+            and not speed_err_req > 10*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus5, hold=True) # produces down to -1.4 m/s2
         elif (self.accel_with_hyst > ACCEL_HOLD_MEDIUM or speed_err_act > 2.0) \
-            and not speed_err_req < -10*CV.KPH_TO_MS*self.cruise_units:
+            and not speed_err_req < -5*CV.KPH_TO_MS*self.cruise_units:
           cruise_cmd(CruiseStalk.plus1, hold=True) # produces up to 0.8 m/s2
         elif (self.accel_with_hyst < DECEL_HOLD_MEDIUM or speed_err_act < -2.0) \
-            and not speed_err_req > 10*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
+            and not speed_err_req > 5*CV.KPH_TO_MS*self.cruise_units and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1, hold=True) # produces down to -0.8 m/s2
-        elif speed_err_req > max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst > 0.0: # todo: (accel>0 or gasPressed) ??
+        elif speed_err_req > max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and (self.accel_with_hyst > 0.0 or CS.out.gasPressed):
           cruise_cmd(CruiseStalk.plus1)
         elif speed_err_req < -max(CC_STEP/2, 0.9*CV.KPH_TO_MS*self.cruise_units) and self.accel_with_hyst < 0.0 and not CS.out.gasPressed:
           cruise_cmd(CruiseStalk.minus1)
@@ -175,7 +175,7 @@ class CarController(CarControllerBase):
     # debug
     if CC.enabled and (self.frame % 10) == 0: #slow print
       frame_number = self.frame
-      print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgo}, Frame number: {frame_number}")
+      print(f"Steering req: {actuators.steer}, Speed: {CS.out.vEgoCluster}, Frame number: {frame_number}")
 
     self.cruise_enabled_prev = CC.enabled
 
