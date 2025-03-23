@@ -122,7 +122,7 @@ class CarController(CarControllerBase):
     # This is because CC.enabled comes from controld and CS.out.cruiseState.enabled is from card threads
     if not CC.enabled and self.cruise_enabled_prev:
       self.cruise_cancel = True
-    # if we need to go below cruise speed, request cancel and coast while steering enabled
+    # if we need to go below cruise speed, request cancel and coast while steering turns off softly
     if (CS.out.cruiseState.speedCluster - self.min_cruise_speed) < 0.1 and actuators.accel < -0.1 \
       and speed_err_act < -1 and CS.out.vEgoCluster - self.min_cruise_speed < 0.4:
       self.cruise_cancel = True
@@ -158,7 +158,7 @@ class CarController(CarControllerBase):
 
     if self.flags & BmwFlags.STEPPER_SERVO_CAN:
       steer_error =  not CC.latActive and CC.enabled
-      if not steer_error: # stop steer CAN tx if steering is unavailable (unless user cancels) #todo soft off when user didn't cancelled
+      if not steer_error: # don't send steer CAN tx if steering is unavailable
         # *** apply steering torque ***
         if CC.enabled:
           new_steer = actuators.steer * CarControllerParams.STEER_MAX
@@ -167,6 +167,9 @@ class CarController(CarControllerBase):
                                              CarControllerParams.STEER_DELTA_UP, CarControllerParams.STEER_DELTA_DOWN,
                                              CarControllerParams.STEER_ERROR_MAX, CarControllerParams.STEER_MAX)
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.TorqueControl, apply_steer))
+        elif not CS.cruise_stalk_cancel and not CS.out.brakePressed and not CS.out.gasPressed and self.apply_steer_last != 0:
+          can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.SoftOff))
+          apply_steer = CS.out.steeringTorqueEps
         else:
           apply_steer = 0
           can_sends.append(bmwcan.create_steer_command(self.frame, SteeringModes.Off))
