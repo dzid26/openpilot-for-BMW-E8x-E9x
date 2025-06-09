@@ -1,4 +1,5 @@
 import pyray as rl
+from openpilot.system.ui.lib.application import gui_app, DialogResult, FontWeight
 from openpilot.system.ui.lib.button import gui_button, ButtonStyle
 from openpilot.system.ui.lib.label import gui_text_box
 
@@ -36,12 +37,14 @@ def confirm_dialog(rect: rl.Rectangle, message: str, confirm_text: str, cancel_t
   )
 
   # Draw the message in the dialog, centered
-  text_rect = rl.Rectangle(dialog_rect.x, dialog_rect.y, dialog_rect.width, dialog_rect.height - TEXT_AREA_HEIGHT_REDUCTION)
+  text_rect = rl.Rectangle(dialog_rect.x + MARGIN, dialog_rect.y, dialog_rect.width - 2 * MARGIN, dialog_rect.height - TEXT_AREA_HEIGHT_REDUCTION)
   gui_text_box(
     text_rect,
     message,
+    font_size=70,
     alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER,
     alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE,
+    font_weight=FontWeight.BOLD,
   )
 
   # Initialize result; -1 means no action taken yet
@@ -54,9 +57,19 @@ def confirm_dialog(rect: rl.Rectangle, message: str, confirm_text: str, cancel_t
     result = 0  # Cancel
 
   # Check for button clicks
-  if gui_button(yes_button, confirm_text, button_style=ButtonStyle.PRIMARY):
-    result = 1  # Confirm
-  if gui_button(no_button, cancel_text):
-    result = 0  # Cancel
+  if cancel_text:
+    if gui_button(yes_button, confirm_text, button_style=ButtonStyle.PRIMARY):
+      result = DialogResult.CONFIRM
+    if gui_button(no_button, cancel_text):
+      result = DialogResult.CANCEL
+  else:
+    centered_button_x = dialog_rect.x + (dialog_rect.width - button_width) / 2
+    centered_yes_button = rl.Rectangle(centered_button_x, button_y, button_width, BUTTON_HEIGHT)
+    if gui_button(centered_yes_button, confirm_text, button_style=ButtonStyle.PRIMARY):
+      result = DialogResult.CONFIRM
 
   return result
+
+
+def alert_dialog(message: str, button_text: str = "OK") -> DialogResult:
+  return confirm_dialog(message, button_text, cancel_text="")

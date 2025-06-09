@@ -82,7 +82,23 @@ class GuiApplication:
       rl.begin_drawing()
       rl.clear_background(rl.BLACK)
 
-      yield
+      # Handle modal overlay rendering and input processing
+      if self._modal_overlay.overlay:
+        if hasattr(self._modal_overlay.overlay, 'render'):
+          result = self._modal_overlay.overlay.render(rl.Rectangle(0, 0, self.width, self.height))
+        elif callable(self._modal_overlay.overlay):
+          result = self._modal_overlay.overlay()
+        else:
+          raise Exception
+
+        if result >= 0:
+          # Execute callback with the result and clear the overlay
+          if self._modal_overlay.callback is not None:
+            self._modal_overlay.callback(result)
+
+          self._modal_overlay = ModalOverlay()
+        else:
+          yield
 
       if DEBUG_FPS:
         rl.draw_fps(10, 10)
