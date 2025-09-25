@@ -31,7 +31,7 @@ Quick start: `bash <(curl -fsSL openpilot.comma.ai)`
 ---
 BMW integration
 ------
-Installer link: https://installer.comma.ai/dzid26/master
+Installer link: https://installer.comma.ai/BMW-E8x-E9x/master
 This is development fork for openpilot integration specific to BMW E-series 2008-2013. (BMW E8x, E9x, maybe E60).
 (My car is E82 with added DCC and servotronic).
 
@@ -41,11 +41,11 @@ Since it uses cruise control CAN bus requests to adjust speed it inherits limita
 The speed target relies purely on openpilot vision model and it may not always be accurate too.
 
 BMW E-series 2008-2013 have 3 vehicle options regarding the cruise control:
-- VO540 **[supported]** - normal cruise control - managed by ECU and typical for 1-series, but can be relatively easily programmed to VO544 on 6-cylinder cars[using NCSExpert](https://www.1addicts.com/forums/showthread.php?t=1138536)
+- VO540 **[supported]** - normal cruise control - managed by ECU and typical for 1-series, but can be relatively easily programmed to VO544 on 6-cylinder cars [using NCSExpert](https://www.1addicts.com/forums/showthread.php?t=1138536)
 - VO544 **[supported]**  - dynamic cruise control (DCC) - managed by DSC and enables brake activation if speed target is far from actual speed. This option is often present in  3-series and all E92.
 - VO541 **[not supported]**  - active cruise control (ACC) - BMW's radar solution - very rare option and reportedly, it had issues with going out of calibration. It probably would work with openpilot, but was not validated. Maybe it has different minimum speed limit?
 
-Each cruise control option can operate in mph or kph (can be changed globally via vehicle setting or only for cruise using NCSExpert). Currently control units are [hardcoded](https://github.com/dzid26/openpilot-for-BMW-E8x-E9x/blob/master-ci/selfdrive/car/bmw/carstate.py#L110) to metric for better control resolution. TODO autodetection of cruise units.
+Each cruise control option can operate in mph or kph (can be changed globally via vehicle setting or only for cruise using NCSExpert). Currently control units are [hardcoded](selfdrive/car/bmw/carstate.py#L110) to metric for better control resolution. TODO autodetection of cruise units.
 
 **In order for openpilot to be able to control vehicle speed, it needs to access ignition status, PT-CAN and F-CAN.** (F-CAN doesn't need to be connected with VO540)
 
@@ -56,7 +56,7 @@ Connection requirement:
 | E8x without DCC | o | Y |
 | E9x with DCC| Y | Y |
 
-Refer to [opendbc-BMW](https://github.com/dzid26/opendbc-BMW-E8x-E9x) to explore and contribute to decoding of BMW CAN messages.
+Refer to [opendbc-BMW](https://github.com/BMW-E8x-E9x/opendbc) to explore and contribute to decoding of BMW CAN messages.
 
 
 DIY hardware onnections:
