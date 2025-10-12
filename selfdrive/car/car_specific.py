@@ -153,7 +153,7 @@ class CarSpecificEvents:
 
     elif self.CP.brand == 'bmw':
       # events
-      events = self.create_common_events(CS, CS_prev, pcm_enable=True)
+      events = self.create_common_events(CS, CS_prev, pcm_enable=False)
 
       if CS.vEgoCluster < self.CP.minEnableSpeed:
         events.add(EventName.belowEngageSpeed)
